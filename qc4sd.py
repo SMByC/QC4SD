@@ -17,7 +17,9 @@ import os
 import sys
 import argparse
 
-from quality_control.settings import quality_control_config, load_input_files
+from quality_control.settings import quality_control_config
+from quality_control.process import main as process_of_quality_control
+from satellite_data.satellite_data import load_satellite_data
 
 BASE_DIR = os.path.dirname(__file__)
 DEFAULT_QCF = os.path.join(BASE_DIR, 'quality_control', 'qc_default_settings.ini')
@@ -49,7 +51,11 @@ def run(qcf, band, files):
     print(config_run['quality_control'])
     print(config_run['quality_control'].sections())
 
-    load_input_files(config_run['files'])
+    # load all input files and setup data
+    SatelliteDataList = load_satellite_data(config_run)
+
+    # process ...
+    process_of_quality_control(SatelliteDataList)
 
 
 def script():

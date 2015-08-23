@@ -5,6 +5,7 @@
 #  Authors: Xavier Corredor Llano
 #  Email: xcorredorl at ideam.gov.co
 
+from osgeo import gdal
 from datetime import datetime
 
 from satellite_data.satellite_data import SatelliteData
@@ -26,8 +27,18 @@ class ModisFile(SatelliteData):
         dt_h = [int(x) for x in self.metadata['PRODUCTIONDATETIME'].replace('.', ':').split('T')[1].split(':')[0:3]]
         self.datetime = datetime(dt_d[0], dt_d[1], dt_d[2], dt_h[0], dt_h[1], dt_h[2])
 
+    def set_band_to_process(self, band):
+        self.band_number = band
+        band_name = [x for x in self.dataset.GetSubDatasets() if 'b0'+str(band) in x[1]][0][0]
+        self.band_to_process = gdal.Open(band_name)
 
-        print(self.datetime)
+    def set_quality_control_band(self):
+        qc_name = [x for x in self.dataset.GetSubDatasets() if '_qc_' in x[1]][0][0]
+        self.quality_control_band = gdal.Open(qc_name)
+
+        #print(self.quality_control_band.ReadAsArray())
+
+
 
 
 '''
