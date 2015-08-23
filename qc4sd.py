@@ -13,28 +13,50 @@
 #
 ##################################################################
 
+import os
 import sys
 import argparse
 
+from quality_control.settings import quality_control_config, load_input_files
 
-def main(config_run):
-    print(config_run)
-    pass
+BASE_DIR = os.path.dirname(__file__)
+DEFAULT_QCF = os.path.join(BASE_DIR, 'quality_control', 'qc_default_settings.ini')
 
 
 def run(qcf, band, files):
-    # execute only if imported as module
-    #
-    # from QC4SD import qc4sd
-    # qc4sd.run('QC4SD/quality_control/qc_default_settings.ini', 1, 'QC4SD/lib.py')
-    config_run = {'qcf': open(qcf, 'r'), 'band': band, 'files': files}
-    main(config_run)
+    """Execute directly if imported as module.
+
+        >>> from QC4SD import qc4sd
+        >>> qc4sd.run(settings.ini, 1, [file1, file2])
+
+    :param qcf: quality control file or 'default'
+    :type qcf: str
+    :param band: band to process
+    :type band: int
+    :param files: files to process
+    :type files: list
+    """
+
+    if qcf == 'default':
+        qcf = DEFAULT_QCF
+
+    config_run = {'qcf': qcf, 'band': band, 'files': files}
+
+    print(config_run)
+
+    config_run['quality_control'] = quality_control_config(config_run['qcf'])
+
+    print(config_run['quality_control'])
+    print(config_run['quality_control'].sections())
+
+    load_input_files(config_run['files'])
 
 
 def script():
-    # execute only if run as a script
-    #
-    # python3 qc4sd.py -qcf quality_control/qc_default_settings.ini -band 1 *.py
+    """Execute only if run as a script.
+
+        $ python3 qc4sd.py -qcf settings.ini -band 1 file1 file2
+    """
 
     # Create parser arguments
     parser = argparse.ArgumentParser(
@@ -42,17 +64,13 @@ def script():
         description='Quality control algorithm for satellite data',
         formatter_class=argparse.RawTextHelpFormatter)
 
-    parser.add_argument('-qcf', type=argparse.FileType('r'), help='Quality Control File', required=True)
+    parser.add_argument('-qcf', type=str, help='Quality Control File', required=True)
     parser.add_argument('-band', type=int, help='Band to process', required=True)
     parser.add_argument('files', type=str, help='Files to process', nargs='*')
 
     args = parser.parse_args()
 
-    config_run = {'qcf': args.qcf, 'band': args.band, 'files': args.files}
-
-    print(config_run)
-
-    main(config_run)
+    run(args.qcf, args.band, args.files)
 
 
 if __name__ == '__main__':
