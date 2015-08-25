@@ -11,14 +11,19 @@ from datetime import datetime
 from satellite_data.satellite_data import SatelliteData
 
 
-class ModisFile(SatelliteData):
+class MODIS(SatelliteData):
 
-    def __init__(self, file, dataset):
-        super().__init__(file, 'MODIS')
-        self.dataset = dataset
+    def __init__(self, file_path, band):
+        """Initialize the class of MODIS products
+
+        :param file_path: path to input file
+        :type file_path: str
+        :param band: number of the band to process
+        :type band: int
+        """
+        super().__init__(file_path)
 
         # load metadata
-        self.metadata = self.dataset.GetMetadata()
         self.satellite = self.metadata['ASSOCIATEDPLATFORMSHORTNAME']  # Terra
         self.shortname = self.metadata['SHORTNAME']  # MOD09A1
         self.longname = self.metadata['LONGNAME']  # MODIS/Terra Surface Reflectance 8-Day L3 Global 500m SIN Grid
@@ -27,17 +32,36 @@ class ModisFile(SatelliteData):
         dt_h = [int(x) for x in self.metadata['PRODUCTIONDATETIME'].replace('.', ':').split('T')[1].split(':')[0:3]]
         self.datetime = datetime(dt_d[0], dt_d[1], dt_d[2], dt_h[0], dt_h[1], dt_h[2])
 
-    def set_band_to_process(self, band):
+        # setup the band to process with Gdal dataset
         self.band_number = band
-        band_name = [x for x in self.dataset.GetSubDatasets() if 'b0'+str(band) in x[1]][0][0]
-        self.band_to_process = gdal.Open(band_name)
+        self.band_name = [x for x in self.sub_datasets if 'b0'+str(band) in x[1]][0][0]
+        #self.band_to_process = gdal.Open(self.band_name)
 
-    def set_quality_control_band(self):
-        qc_name = [x for x in self.dataset.GetSubDatasets() if '_qc_' in x[1]][0][0]
-        self.quality_control_band = gdal.Open(qc_name)
+        # setup the quality control band to process with Gdal dataset.
+        self.qc_name = [x for x in self.sub_datasets if '_qc_' in x[1]][0][0]
+        #self.quality_control_band = gdal.Open(qc_name)
+        #self.quality_control_raster = self.quality_control_band.ReadAsArray()
 
         #print(self.quality_control_band.ReadAsArray())
 
+    def is_quality_control_tile_approved(self):
+        """Check if the general quality control values for the entire
+        tile (based on metadata not qc band) are approved based on the
+        quality control file.
+        """
+
+        # TODO
+        return True
+
+    def check_quality_control(self, pixel):
+        """Check if the specific pixel in the tile pass the quality
+        control, this is evaluate with the quality control value for
+        the respective pixel position. The quality control evaluation
+        based on the quality control file.
+        """
+        
+        if not self.is_quality_control_tile_approved():
+            return False
 
 
 

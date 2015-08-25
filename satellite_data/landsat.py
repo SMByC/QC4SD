@@ -12,9 +12,9 @@ from satellite_data.satellite_data import SatelliteData
 
 class LandsatFile(SatelliteData):
 
-    def __init__(self, file):
+    def __init__(self, file_path):
         super().__init__()
-        self.file = file
+        self.file_path = file_path
 
     def load(self):
         pass

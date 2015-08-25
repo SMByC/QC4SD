@@ -5,38 +5,47 @@
 #  Authors: Xavier Corredor Llano
 #  Email: xcorredorl at ideam.gov.co
 
+import os
 from osgeo import gdal
 
 
 class SatelliteData:
 
-    def __init__(self, file, satellite_instrument):
-        self.file = file
-        self.satellite_instrument = satellite_instrument
+    def __init__(self, file_path):
+        self.satellite_instrument = self.__class__.__name__
+        self.file_path = file_path
+        self.file_name = os.path.basename(file_path)
 
-    def setup_metadata(self):
-        pass
+        gdal_dataset = gdal.Open(file_path)
+        self.metadata = gdal_dataset.GetMetadata()
+        self.sub_datasets = gdal_dataset.GetSubDatasets()
+        del gdal_dataset
+
+    def __str__(self):
+        return self.file_name
 
 
-def new(file):
+def new(file_path, band):
     """Create new instance of child of SatelliteData class
-    (ModisFile, LandsatFile, ...) base on metadata of input
+    (MODIS, LandsatFile, ...) base on metadata of input
     file.
 
-    :param file: input file
-    :type file: str
+    :param file_path: input file
+    :type file_path: str
     :return: child of SatelliteData
     :rtype: SatelliteData
     """
 
-    dataset = gdal.Open(file)
-    satellite_instrument = dataset.GetMetadata()["ASSOCIATEDINSTRUMENTSHORTNAME"]
+    gdal_dataset = gdal.Open(file_path)
+    satellite_instrument = gdal_dataset.GetMetadata()["ASSOCIATEDINSTRUMENTSHORTNAME"]
 
     if satellite_instrument == 'MODIS':
-        from satellite_data.modis import ModisFile
-        new_modis = ModisFile(file, dataset)
-
+        from satellite_data.modis import MODIS
+        new_modis = MODIS(file_path, band)
+        del gdal_dataset
         return new_modis
+
+    raise NotImplementedError("Product {0} not implemented or not supported".format(satellite_instrument))
 
 
 def load_satellite_data(config_run):
@@ -47,8 +56,8 @@ def load_satellite_data(config_run):
 
     # create new instances of satellite data
     SatelliteDataList = []
-    for file in config_run['files']:
-        SatelliteDataList.append(new(file))
+    for file_path in config_run['files']:
+        SatelliteDataList.append(new(file_path, config_run['band']))
 
     def check():
         # check all files are the same platform (and satellite),
@@ -66,12 +75,5 @@ def load_satellite_data(config_run):
         if not all(x == tile[0] for x in tile):
             raise ValueError("All files aren't in the same tile")
     check()
-
-    # setup the band to process and band of quality control
-    for sd in SatelliteDataList:
-        # set the band to process
-        sd.set_band_to_process(config_run['band'])
-        # set the band of quality control
-        sd.set_quality_control_band()
 
     return SatelliteDataList

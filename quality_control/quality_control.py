@@ -8,7 +8,27 @@
 import numpy
 from osgeo import gdal
 
-def main(SatelliteDataList):
+
+class QualityControl:
+
+    quality_control_list = []
+
+    def __init__(self, SateliteData, quality_control_settings):
+        QualityControl.quality_control_list.append(self)
+        satellite_data_tile
+        self.file_path = file_path
+        self.file_name = os.path.basename(file_path)
+
+        gdal_dataset = gdal.Open(file_path)
+        self.metadata = gdal_dataset.GetMetadata()
+        self.sub_datasets = gdal_dataset.GetSubDatasets()
+        del gdal_dataset
+
+    def __str__(self):
+        return self.file_name
+
+
+def process(SatelliteDataList):
 
     # sorted the satellite input data files by date (chronological order)
     SatelliteDataList.sort(key=lambda x: x.datetime)
