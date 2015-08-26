@@ -8,7 +8,7 @@
 from osgeo import gdal
 from datetime import datetime
 
-from satellite_data.satellite_data import SatelliteData
+from QC4SD.satellite_data.satellite_data import SatelliteData
 
 
 class MODIS(SatelliteData):
@@ -21,6 +21,7 @@ class MODIS(SatelliteData):
         :param band: number of the band to process
         :type band: int
         """
+        super().list.append(self)
         super().__init__(file_path)
 
         # load metadata

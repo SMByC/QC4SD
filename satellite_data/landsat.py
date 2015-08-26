@@ -7,7 +7,7 @@
 
 # for future implementation
 
-from satellite_data.satellite_data import SatelliteData
+from QC4SD.satellite_data.satellite_data import SatelliteData
 
 
 class LandsatFile(SatelliteData):
