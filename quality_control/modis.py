@@ -7,6 +7,7 @@
 
 from osgeo import gdal
 
+from QC4SD.lib import convert_to_binary
 
 
 class ModisQC:
@@ -34,13 +35,19 @@ class ModisQC:
         if self.id_name == 'sf':
             self.full_name = 'State flags'
 
-    def quality_control_check(self, x, y, qcf):
-        qc_value = self.quality_control_raster.item((x, y))
+    def quality_control_check(self, x, y, band, qcf):
         check_list = {}
+        qc_value = self.quality_control_raster.item((x, y))
+        qc_value_binary = convert_to_binary(qc_value)
 
         if self.sd_shortname in ['MOD09A1', 'MYD09A1']:
             if self.id_name == 'rbq':
-                pass
+                ### Modland QA
+                bits = qc_value_binary[0:2]
+                check_list['rbq_modland_qa_'+bits] = qcf.getboolean('MXD09A1', 'rbq_modland_qa_'+bits)
+                ### Data Quality
+                bits = qc_value_binary[(band-1)*4+2:band*4+2]
+                check_list['rbq_data_quality_'+bits] = qcf.getboolean('MXD09A1', 'rbq_data_quality_'+bits)
 
-
+                # TODO
 

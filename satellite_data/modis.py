@@ -10,6 +10,7 @@ from datetime import datetime
 
 from QC4SD.satellite_data.satellite_data import SatelliteData
 from QC4SD.lib import fix_zeros
+from QC4SD.quality_control.modis import ModisQC
 
 
 class MODIS(SatelliteData):
@@ -46,25 +47,25 @@ class MODIS(SatelliteData):
         if self.shortname in ['MOD09A1', 'MYD09A1']:
             # Reflectance band quality
             qc_name = [x for x in self.sub_datasets if '_qc_' in x[1]][0][0]
-            self.qc_bands['rbq'] = (self.shortname, 'rbq', qc_name)
+            self.qc_bands['rbq'] = ModisQC(self.shortname, 'rbq', qc_name)
             # Solar Zenith Angle
             qc_name = [x for x in self.sub_datasets if 'szen' in x[1]][0][0]
-            self.qc_bands['sza'] = (self.shortname, 'sza', qc_name)
+            self.qc_bands['sza'] = ModisQC(self.shortname, 'sza', qc_name)
             # View Zenith Angle
             qc_name = [x for x in self.sub_datasets if 'vzen' in x[1]][0][0]
-            self.qc_bands['vza'] = (self.shortname, 'vza', qc_name)
+            self.qc_bands['vza'] = ModisQC(self.shortname, 'vza', qc_name)
             # Relative Zenith Angle
             qc_name = [x for x in self.sub_datasets if 'raz' in x[1]][0][0]
-            self.qc_bands['rza'] = (self.shortname, 'rza', qc_name)
+            self.qc_bands['rza'] = ModisQC(self.shortname, 'rza', qc_name)
             # State flags
             qc_name = [x for x in self.sub_datasets if '_state_' in x[1]][0][0]
-            self.qc_bands['sf'] = (self.shortname, 'sf', qc_name)
+            self.qc_bands['sf'] = ModisQC(self.shortname, 'sf', qc_name)
 
         # for MOD09/MYD09 Q1
         if self.shortname in ['MOD09Q1', 'MYD09Q1']:
             # Reflectance band quality
             qc_name = [x for x in self.sub_datasets if '_qc_' in x[1]][0][0]
-            self.qc_bands['rbq'] = (self.shortname, 'rbq', qc_name)
+            self.qc_bands['rbq'] = ModisQC(self.shortname, 'rbq', qc_name)
 
     def get_data_band(self, band):
         """Return the raster of the data band for respective band

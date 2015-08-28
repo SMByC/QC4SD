@@ -28,8 +28,10 @@ class QualityControl:
         self.SatelliteData_list = SatelliteData_list
         self.qcf = quality_control_file
 
+        self.qc_check_lists = {}
+
         self.output_driver = None
-        self.output_raster = None   # copy matrix
+        self.output_raster = None   # copy matrix, only delete no passed pixel
 
     def __str__(self):
         return self.band_name
@@ -40,19 +42,26 @@ class QualityControl:
             # get raster for band to process
             data_band_raster = sd.get_data_band_name(self.band)
 
-            # process each pixel for the band to process and quality control band
-            for (x, y), band_value in numpy.ndenumerate(data_band_raster):
+            # process each pixel for the band to process
+            for (x, y), data_band_pixel in numpy.ndenumerate(data_band_raster):
+                # check pixel with all items of all quality control bands configured
                 for qc_id_name, qc_checker in sd.qc_bands.items():
-                    if qc_checker.quality_control_check(x, y, self.qcf):
-                        save_pixel(band_value)
-                    else:
-                        save_pixel(float('nan'))
+                    self.qc_check_lists[qc_checker.fullname] = qc_checker.quality_control_check(x, y, self.band, self.qcf)
+
+
+
+
+                # TODO
+                if "all values in self.qc_check_lists are true":
+                    save_pixel(data_band_pixel)
+                else:
+                    save_pixel(float('nan'))
 
 
 
 
                 qc_value = quality_control_raster.item((x, y))
-                print(x,y,band_value, qc_value)
+                print(x,y,data_band_pixel, qc_value)
 
 
         # get raster for quality control band

@@ -41,7 +41,7 @@ def run(qcf, bands, files, output):
     :type output: str
     """
 
-    ########################
+    ################################
     # check parameters
 
     # quality control file
@@ -69,7 +69,7 @@ def run(qcf, bands, files, output):
 
     print(config_run)
 
-    ########################
+    ################################
     # process
 
     # setup and set the input or default quality control file
