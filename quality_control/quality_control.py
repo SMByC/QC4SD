@@ -8,44 +8,68 @@
 import numpy
 from osgeo import gdal
 
-from QC4SD.satellite_data.satellite_data import SatelliteData
+from QC4SD.lib import fix_zeros
 
 
 class QualityControl:
+    """Process the quality control for all input file for one
+    band with the quality control settings based on quality control
+    file.
+    """
 
     # save all instances
     list = []
 
-    def __init__(self, satellite_data, quality_control_file):
+    def __init__(self, SatelliteData_list, quality_control_file, band):
         QualityControl.list.append(self)
+        self.band = band
+        self.band_name = 'band'+fix_zeros(band, 2)
 
-        self.satellite_data = satellite_data
-        self.quality_control_file = quality_control_file
+        self.SatelliteData_list = SatelliteData_list
+        self.qcf = quality_control_file
+
+        self.output_driver = None
+        self.output_raster = None   # copy matrix
 
     def __str__(self):
-        return self.file_name
+        return self.band_name
 
     def process(self):
-        # get raster for band to process
-        gdal_dataset_band = gdal.Open(satellite_data.band_name)
-        band_to_process_raster = gdal_dataset_band.ReadAsArray()
+        # for each file
+        for sd in self.SatelliteData_list:
+            # get raster for band to process
+            data_band_raster = sd.get_data_band_name(self.band)
+
+            # process each pixel for the band to process and quality control band
+            for (x, y), band_value in numpy.ndenumerate(data_band_raster):
+                for qc_id_name, qc_checker in sd.qc_bands.items():
+                    if qc_checker.quality_control_check(x, y, self.qcf):
+                        save_pixel(band_value)
+                    else:
+                        save_pixel(float('nan'))
+
+
+
+
+                qc_value = quality_control_raster.item((x, y))
+                print(x,y,band_value, qc_value)
+
 
         # get raster for quality control band
         gdal_dataset_qc = gdal.Open(satellite_data.qc_name)
         quality_control_raster = gdal_dataset_qc.ReadAsArray()
 
-        # process each pixel for the band to process and quality control band
-        for (x, y), band_value in numpy.ndenumerate(band_to_process_raster):
-            qc_value = quality_control_raster.item((x, y))
-            print(x,y,band_value, qc_value)
 
-        del gdal_dataset_band
+        del gdal_data_band
         del gdal_dataset_qc
-        del band_to_process_raster
+        del data_band_raster
         del quality_control_raster
 
+    def save_results(self, output_dir):
+        pass
 
-def process():
+
+def process2():
 
     # sorted the satellite input data files by date (chronological order)
     SatelliteData.list.sort(key=lambda x: x.datetime)

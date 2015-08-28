@@ -12,9 +12,9 @@ from QC4SD.satellite_data.satellite_data import SatelliteData
 
 class LandsatFile(SatelliteData):
 
-    def __init__(self, file_path):
+    def __init__(self, file):
         super().__init__()
-        self.file_path = file_path
+        self.file = file
 
     def load(self):
         pass

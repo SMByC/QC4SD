@@ -14,12 +14,12 @@ class SatelliteData:
     # save all instances
     list = []
 
-    def __init__(self, file_path):
+    def __init__(self, file):
         self.satellite_instrument = self.__class__.__name__
-        self.file_path = file_path
-        self.file_name = os.path.basename(file_path)
+        self.file = file
+        self.file_name = os.path.basename(file)
 
-        gdal_dataset = gdal.Open(file_path)
+        gdal_dataset = gdal.Open(file)
         self.metadata = gdal_dataset.GetMetadata()
         self.sub_datasets = gdal_dataset.GetSubDatasets()
         del gdal_dataset
@@ -28,21 +28,21 @@ class SatelliteData:
         return self.file_name
 
 
-def new(file_path, band):
+def new(file):
     """Create new instance of child of SatelliteData class
     (MODIS, LandsatFile, ...) base on metadata of input
     file.
 
-    :param file_path: input file
-    :type file_path: str
+    :param file: input file
+    :type file: str
     """
 
-    gdal_dataset = gdal.Open(file_path)
+    gdal_dataset = gdal.Open(file)
     satellite_instrument = gdal_dataset.GetMetadata()["ASSOCIATEDINSTRUMENTSHORTNAME"]
 
     if satellite_instrument == 'MODIS':
         from QC4SD.satellite_data.modis import MODIS
-        MODIS(file_path, band)
+        MODIS(file)
         del gdal_dataset
     elif satellite_instrument == 'LANDSAT':
         pass
@@ -58,8 +58,8 @@ def load_satellite_data(config_run):
 
     # create new instances of satellite data
 
-    for file_path in config_run['files']:
-        new(file_path, config_run['band'])
+    for file in config_run['files']:
+        new(file)
 
     def check():
         # check all files are the same platform (and satellite),

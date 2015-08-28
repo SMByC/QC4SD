@@ -33,7 +33,7 @@ def run(qcf, bands, files, output):
 
     :param qcf: quality control file or 'default'
     :type qcf: str
-    :param bands: bands to process for the input files
+    :param bands: band or bands to process
     :type bands: list
     :param files: files to process
     :type files: list
@@ -63,7 +63,7 @@ def run(qcf, bands, files, output):
             raise FileNotFoundError("The file {0} not exist.".format(file))
     # output
     if not os.path.isdir(output):
-        raise NotADirectoryError("The output directory not exist.")
+        raise NotADirectoryError("The output directory {0} not exist.".format(output))
 
     config_run = {'qcf': qcf, 'bands': bands, 'files': files, 'output': output}
 
@@ -98,9 +98,9 @@ def script():
         formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('-qcf', type=str, help='quality control file', required=True)
-    parser.add_argument('-bands', type=str, help='band or bands to process for the input files', required=True)
-    parser.add_argument('files', type=str, help='files to process', nargs='*')
+    parser.add_argument('-bands', type=str, help='band or bands to process', required=True)
     parser.add_argument('-output', type=str, help='output directory for save results', default=os.getcwd())
+    parser.add_argument('files', type=str, help='files to process', nargs='*')
 
     args = parser.parse_args()
 
@@ -134,6 +134,25 @@ for x in gdal_dataset.GetSubDatasets(): print(x[1])
 
 qc = gdal.Open(
     'HDF4_EOS:EOS_GRID:"/multimedia/Tmp_build/ATD_data/Quality_Control/p0_download/MOD09A1/h10v07/MOD09A1.A2014361.h10v07.005.2015006072800.hdf":MOD_Grid_500m_Surface_Reflectance:sur_refl_qc_500m')
+
+print(qc.ReadAsArray())
+
+#### Q1
+
+from osgeo import gdal
+
+gdal_dataset = gdal.Open(
+    "/multimedia/Tmp_build/ATD_data/Quality_Control/p0_download/MOD09Q1/h10v09/MOD09Q1.A2014361.h10v09.005.2015006072121.hdf")
+
+
+print(gdal_dataset.GetSubDatasets())
+
+shortname = gdal_dataset.GetMetadataItem('SHORTNAME')
+
+for x in gdal_dataset.GetSubDatasets(): print(x[1])
+
+qc = gdal.Open(
+    'HDF4_EOS:EOS_GRID:"/multimedia/Tmp_build/ATD_data/Quality_Control/p0_download/MOD09Q1/h10v09/MOD09Q1.A2014361.h10v09.005.2015006072121.hdf":MOD_Grid_250m_Surface_Reflectance:sur_refl_qc_250m')
 
 print(qc.ReadAsArray())
 '''

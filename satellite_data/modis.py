@@ -9,20 +9,19 @@ from osgeo import gdal
 from datetime import datetime
 
 from QC4SD.satellite_data.satellite_data import SatelliteData
+from QC4SD.lib import fix_zeros
 
 
 class MODIS(SatelliteData):
 
-    def __init__(self, file_path, band):
+    def __init__(self, file):
         """Initialize the class of MODIS products
 
-        :param file_path: path to input file
-        :type file_path: str
-        :param band: number of the band to process
-        :type band: int
+        :param file: path to input file
+        :type file: str
         """
         super().list.append(self)
-        super().__init__(file_path)
+        super().__init__(file)
 
         # load metadata
         self.satellite = self.metadata['ASSOCIATEDPLATFORMSHORTNAME']  # Terra
@@ -33,17 +32,58 @@ class MODIS(SatelliteData):
         dt_h = [int(x) for x in self.metadata['PRODUCTIONDATETIME'].replace('.', ':').split('T')[1].split(':')[0:3]]
         self.datetime = datetime(dt_d[0], dt_d[1], dt_d[2], dt_h[0], dt_h[1], dt_h[2])
 
-        # setup the band to process with Gdal dataset
-        self.band_number = band
-        self.band_name = [x for x in self.sub_datasets if 'b0'+str(band) in x[1]][0][0]
-        #self.band_to_process = gdal.Open(self.band_name)
-
         # setup the quality control band to process with Gdal dataset.
         self.qc_name = [x for x in self.sub_datasets if '_qc_' in x[1]][0][0]
         #self.quality_control_band = gdal.Open(qc_name)
         #self.quality_control_raster = self.quality_control_band.ReadAsArray()
 
         #print(self.quality_control_band.ReadAsArray())
+
+    def set_quality_control_bands(self):
+        self.qc_bands = {}
+
+        # for MOD09/MYD09 A1
+        if self.shortname in ['MOD09A1', 'MYD09A1']:
+            # Reflectance band quality
+            qc_name = [x for x in self.sub_datasets if '_qc_' in x[1]][0][0]
+            self.qc_bands['rbq'] = (self.shortname, 'rbq', qc_name)
+            # Solar Zenith Angle
+            qc_name = [x for x in self.sub_datasets if 'szen' in x[1]][0][0]
+            self.qc_bands['sza'] = (self.shortname, 'sza', qc_name)
+            # View Zenith Angle
+            qc_name = [x for x in self.sub_datasets if 'vzen' in x[1]][0][0]
+            self.qc_bands['vza'] = (self.shortname, 'vza', qc_name)
+            # Relative Zenith Angle
+            qc_name = [x for x in self.sub_datasets if 'raz' in x[1]][0][0]
+            self.qc_bands['rza'] = (self.shortname, 'rza', qc_name)
+            # State flags
+            qc_name = [x for x in self.sub_datasets if '_state_' in x[1]][0][0]
+            self.qc_bands['sf'] = (self.shortname, 'sf', qc_name)
+
+        # for MOD09/MYD09 Q1
+        if self.shortname in ['MOD09Q1', 'MYD09Q1']:
+            # Reflectance band quality
+            qc_name = [x for x in self.sub_datasets if '_qc_' in x[1]][0][0]
+            self.qc_bands['rbq'] = (self.shortname, 'rbq', qc_name)
+
+    def get_data_band(self, band):
+        """Return the raster of the data band for respective band
+        of the file.
+
+        :param band: band to process
+        :type band: int
+        :return: raster of the data band
+        :rtype: ndarray
+        """
+        data_band_name = [x for x in self.sub_datasets if 'b'+fix_zeros(band, 2) in x[1]][0][0]
+        gdal_data_band = gdal.Open(data_band_name(band))
+        data_band_raster = gdal_data_band.ReadAsArray()
+        return data_band_raster
+
+    def get_quality_control_bands(self, band):
+
+
+        return [x for x in self.sub_datasets if 'b0'+str(band) in x[1]][0][0]
 
     def is_quality_control_tile_approved(self):
         """Check if the general quality control values for the entire
