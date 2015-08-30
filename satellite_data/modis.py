@@ -40,6 +40,8 @@ class MODIS(SatelliteData):
 
         #print(self.quality_control_band.ReadAsArray())
 
+        self.set_quality_control_bands()
+
     def set_quality_control_bands(self):
         self.qc_bands = {}
 
@@ -79,7 +81,7 @@ class MODIS(SatelliteData):
         :rtype: ndarray
         """
         data_band_name = [x for x in self.sub_datasets if 'b'+fix_zeros(band, 2) in x[1]][0][0]
-        gdal_data_band = gdal.Open(data_band_name(band))
+        gdal_data_band = gdal.Open(data_band_name)
         data_band_raster = gdal_data_band.ReadAsArray()
         return data_band_raster
 
@@ -88,24 +90,6 @@ class MODIS(SatelliteData):
 
         return [x for x in self.sub_datasets if 'b0'+str(band) in x[1]][0][0]
 
-    def is_quality_control_tile_approved(self):
-        """Check if the general quality control values for the entire
-        tile (based on metadata not qc band) are approved based on the
-        quality control file.
-        """
-
-        # TODO
-        return True
-
-    def check_quality_control(self, pixel):
-        """Check if the specific pixel in the tile pass the quality
-        control, this is evaluate with the quality control value for
-        the respective pixel position. The quality control evaluation
-        based on the quality control file.
-        """
-        
-        if not self.is_quality_control_tile_approved():
-            return False
 
 
 

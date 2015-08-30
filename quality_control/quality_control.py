@@ -40,13 +40,13 @@ class QualityControl:
         # for each file
         for sd in self.SatelliteData_list:
             # get raster for band to process
-            data_band_raster = sd.get_data_band_name(self.band)
+            data_band_raster = sd.get_data_band(self.band)
 
             # process each pixel for the band to process
             for (x, y), data_band_pixel in numpy.ndenumerate(data_band_raster):
                 # check pixel with all items of all quality control bands configured
                 for qc_id_name, qc_checker in sd.qc_bands.items():
-                    self.qc_check_lists[qc_checker.fullname] = qc_checker.quality_control_check(x, y, self.band, self.qcf)
+                    self.qc_check_lists[qc_checker.full_name] = qc_checker.quality_control_check(x, y, self.band, self.qcf)
 
 
 
@@ -59,20 +59,10 @@ class QualityControl:
 
 
 
-
-                qc_value = quality_control_raster.item((x, y))
-                print(x,y,data_band_pixel, qc_value)
+            del data_band_raster
 
 
-        # get raster for quality control band
-        gdal_dataset_qc = gdal.Open(satellite_data.qc_name)
-        quality_control_raster = gdal_dataset_qc.ReadAsArray()
 
-
-        del gdal_data_band
-        del gdal_dataset_qc
-        del data_band_raster
-        del quality_control_raster
 
     def save_results(self, output_dir):
         pass
