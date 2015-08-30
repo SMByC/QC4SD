@@ -7,15 +7,16 @@
 
 from osgeo import gdal
 
-from QC4SD.lib import convert_to_binary
+from QC4SD.lib import fix_binary_string, int2bin
 
 
 class ModisQC:
 
-    def __init__(self, sd_shortname, id_name, qc_name):
+    def __init__(self, sd_shortname, id_name, qc_name, num_bits=None):
         self.sd_shortname = sd_shortname
         self.id_name = id_name
         self.qc_name = qc_name
+        self.num_bits = num_bits
         # get raster for quality control band
         gdal_dataset_qc = gdal.Open(self.qc_name)
         self.quality_control_raster = gdal_dataset_qc.ReadAsArray()
@@ -37,16 +38,16 @@ class ModisQC:
 
     def quality_control_check(self, x, y, band, qcf):
         check_list = {}
-        qc_value = self.quality_control_raster.item((x, y))
-        qc_value_binary = convert_to_binary(qc_value)
+        qc_pixel_value = self.quality_control_raster.item((x, y))
+        qc_bin_str = fix_binary_string(int2bin(qc_pixel_value), self.num_bits)
 
         if self.sd_shortname in ['MOD09A1', 'MYD09A1']:
             if self.id_name == 'rbq':
                 ### Modland QA
-                bits = qc_value_binary[0:2]
+                bits = qc_bin_str[0:2]
                 check_list['rbq_modland_qa_'+bits] = qcf.getboolean('MXD09A1', 'rbq_modland_qa_'+bits)
                 ### Data Quality
-                bits = qc_value_binary[(band-1)*4+2:band*4+2]
+                bits = qc_bin_str[(band-1)*4+2:band*4+2]
                 check_list['rbq_data_quality_'+bits] = qcf.getboolean('MXD09A1', 'rbq_data_quality_'+bits)
 
                 # TODO

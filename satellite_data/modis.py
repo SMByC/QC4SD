@@ -45,6 +45,8 @@ class MODIS(SatelliteData):
 
         # for MOD09/MYD09 A1
         if self.shortname in ['MOD09A1', 'MYD09A1']:
+            # define numbers of bits for the band value in binary
+            num_bits = 32
             # Reflectance band quality
             qc_name = [x for x in self.sub_datasets if '_qc_' in x[1]][0][0]
             self.qc_bands['rbq'] = ModisQC(self.shortname, 'rbq', qc_name)
