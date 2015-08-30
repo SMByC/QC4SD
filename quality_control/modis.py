@@ -25,16 +25,11 @@ class ModisQC:
         self.setup()
 
     def setup(self):
-        if self.id_name == 'rbq':
-            self.full_name = 'Reflectance Band Quality'
-        if self.id_name == 'sza':
-            self.full_name = 'Solar Zenith Angle'
-        if self.id_name == 'vza':
-            self.full_name = 'View Zenith Angle'
-        if self.id_name == 'rza':
-            self.full_name = 'Relative Zenith Angle'
-        if self.id_name == 'sf':
-            self.full_name = 'State flags'
+        if self.id_name == 'rbq': self.full_name = 'Reflectance Band Quality'
+        if self.id_name == 'sza': self.full_name = 'Solar Zenith Angle'
+        if self.id_name == 'vza': self.full_name = 'View Zenith Angle'
+        if self.id_name == 'rza': self.full_name = 'Relative Zenith Angle'
+        if self.id_name == 'sf':  self.full_name = 'State flags'
 
     def quality_control_check(self, x, y, band, qcf):
         check_list = {}
