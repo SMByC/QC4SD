@@ -51,6 +51,7 @@ class ModisQC:
         """
 
         qc_pixel_value = self.quality_control_raster.item((x, y))
+        #print(qc_pixel_value)
 
         # [MXD09A1] ########################################################
         # for MOD09A1 and MYD09A1

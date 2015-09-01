@@ -5,7 +5,7 @@
 #  Authors: Xavier Corredor Llano
 #  Email: xcorredorl at ideam.gov.co
 
-import numpy
+import numpy as np
 from osgeo import gdal
 
 from QC4SD.lib import fix_zeros
@@ -31,72 +31,60 @@ class QualityControl:
         self.qc_check_lists = {}
 
         self.output_driver = None
-        self.output_raster = None   # copy matrix, only delete no passed pixel
+        self.output_bands = []
 
     def __str__(self):
         return self.band_name
 
     def process(self):
+        """Process the quality control, this is check pixel per pixel
+        for specific band to process for all input files. Save all
+        raster 2d array checked (QC) sorted chronologically by date
+        of input file.
+        """
+
         # for each file
         for sd in self.SatelliteData_list:
             # get raster for band to process
             data_band_raster = sd.get_data_band(self.band)
+            # get NoData value specific per band/product
+            nodata_value = sd.get_nodata_value(self.band)
 
             # process each pixel for the band to process
-            for (x, y), data_band_pixel in numpy.ndenumerate(data_band_raster):
+            for (x, y), data_band_pixel in np.ndenumerate(data_band_raster):
+                # if pixel is not valid then don't check it
+                if data_band_pixel == int(nodata_value):
+                    continue
                 # check pixel with all items of all quality control bands configured
+                pixel_check_list = {}
                 for qc_id_name, qc_checker in sd.qc_bands.items():
-                    self.qc_check_lists[qc_checker.full_name] = qc_checker.quality_control_check(x, y, self.band, self.qcf)
+                    pixel_check_list[qc_checker.full_name] = qc_checker.quality_control_check(x, y, self.band, self.qcf)
+
+                # the pixel pass or not pass the quality control:
+                # check if all validate quality control for this pixel are True
+                pixel_pass_quality_control = not (False in [j for sublist in [list(i.values()) for i in list(pixel_check_list.values())] for j in sublist])
+
+                # save check lists of quality control per pixel
+                #self.qc_check_lists[(x, y)] = pixel_check_list  # memory leak
+
+                if y == 0:
+                    print(x,y,pixel_pass_quality_control)
+
+                # if the pixel not pass the quality control, replace with NoData value
+                if not pixel_pass_quality_control:
+                    data_band_raster[x, y] = nodata_value
 
 
+            print(self.qc_check_lists)
+
+            # save raster band for each input file with QC in sorted list chronologically
+            self.output_bands.append(data_band_raster)
 
 
-                # TODO
-                if "all values in self.qc_check_lists are true":
-                    save_pixel(data_band_pixel)
-                else:
-                    save_pixel(float('nan'))
-
-
-
-            del data_band_raster
-
+            exit(1)
 
 
 
     def save_results(self, output_dir):
         pass
 
-
-def process2():
-
-    # sorted the satellite input data files by date (chronological order)
-    SatelliteData.list.sort(key=lambda x: x.datetime)
-
-    for satellite_data in SatelliteData.list:
-        print(satellite_data)
-        print(satellite_data.datetime)
-
-    # process each file (tile)
-    for satellite_data in SatelliteData.list:
-        # get raster for band to process
-        gdal_dataset_band = gdal.Open(satellite_data.band_name)
-        band_to_process_raster = gdal_dataset_band.ReadAsArray()
-
-        # get raster for quality control band
-        gdal_dataset_qc = gdal.Open(satellite_data.qc_name)
-        quality_control_raster = gdal_dataset_qc.ReadAsArray()
-
-        # process each pixel for the band to process and quality control band
-        for (x, y), band_value in numpy.ndenumerate(band_to_process_raster):
-            qc_value = quality_control_raster.item((x, y))
-            print(x,y,band_value, qc_value)
-
-
-
-
-
-        del gdal_dataset_band
-        del gdal_dataset_qc
-        del band_to_process_raster
-        del quality_control_raster
