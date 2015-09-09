@@ -10,6 +10,10 @@ from osgeo import gdal
 
 
 class SatelliteData:
+    # static fields (globals)
+    satellite = None
+    shortname = None
+    tile = None
 
     # save all instances
     list = []

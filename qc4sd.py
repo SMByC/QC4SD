@@ -104,7 +104,6 @@ def script():
 
     args = parser.parse_args()
 
-
     # formatted the bands argument
     try:
         args.bands = [int(b) for b in list(args.bands.split(','))]

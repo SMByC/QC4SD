@@ -5,10 +5,13 @@
 #  Authors: Xavier Corredor Llano
 #  Email: xcorredorl at ideam.gov.co
 
+import os
+import osr
 import numpy as np
 from osgeo import gdal
 
 from QC4SD.lib import fix_zeros
+from QC4SD.satellite_data.satellite_data import SatelliteData
 
 
 class QualityControl:
@@ -32,6 +35,7 @@ class QualityControl:
 
         self.output_driver = None
         self.output_bands = []
+        self.output_filename = "{0}_{1}_band{2}.hdf".format(SatelliteData.tile, SatelliteData.shortname, fix_zeros(band, 2))
 
     def __str__(self):
         return self.band_name
@@ -53,7 +57,7 @@ class QualityControl:
             # process each pixel for the band to process
             for (x, y), data_band_pixel in np.ndenumerate(data_band_raster):
                 # if pixel is not valid then don't check it
-                if data_band_pixel == int(nodata_value):
+                if data_band_pixel == int(nodata_value): # or True:
                     continue
                 # check pixel with all items of all quality control bands configured
                 pixel_check_list = {}
@@ -74,17 +78,38 @@ class QualityControl:
                 if not pixel_pass_quality_control:
                     data_band_raster[x, y] = nodata_value
 
-
-            print(self.qc_check_lists)
+            #print(self.qc_check_lists)
 
             # save raster band for each input file with QC in sorted list chronologically
             self.output_bands.append(data_band_raster)
 
-
-            exit(1)
-
-
-
     def save_results(self, output_dir):
-        pass
+        # get gdal properties of one of data band
+        sd = self.SatelliteData_list[0]
+        data_band_name = [x for x in sd.sub_datasets if 'b'+fix_zeros(self.band, 2) in x[1]][0][0]
+        gdal_data_band = gdal.Open(data_band_name)
+        geotransform = gdal_data_band.GetGeoTransform()
+        originX = geotransform[0]
+        originY = geotransform[3]
+        pixelWidth = geotransform[1]
+        pixelHeight = geotransform[5]
+        cols = gdal_data_band.RasterXSize
+        rows = gdal_data_band.RasterYSize
+
+        # settings projection and output raster
+        driver = gdal.GetDriverByName('NETCDF')
+        nbands = len(self.output_bands)
+        outRaster = driver.Create(os.path.join(output_dir, self.output_filename), cols, rows, nbands, gdal.GDT_Int16)
+        outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
+        outRasterSRS = osr.SpatialReference()
+        outRasterSRS.ImportFromWkt(gdal_data_band.GetProjectionRef())
+        outRaster.SetProjection(outRasterSRS.ExportToWkt())
+
+        # write bands
+        for nband, data_band_raster in enumerate(self.output_bands):
+            outband = outRaster.GetRasterBand(nband + 1)
+            outband.WriteArray(data_band_raster)
+            #outband.WriteArray(sd.get_data_band(self.band))
+            outband.FlushCache()
+
 
