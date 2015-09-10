@@ -57,7 +57,7 @@ def new(file):
 def load_satellite_data(config_run):
 
     # check number of files
-    if len(config_run['files']) == 0:  # TODO >1 ??
+    if len(config_run['files']) == 0:
         raise ValueError("Not files to process")
 
     # create new instances of satellite data
@@ -81,3 +81,5 @@ def load_satellite_data(config_run):
         if not all(x == tile[0] for x in tile):
             raise ValueError("All files aren't in the same tile")
     check()
+
+

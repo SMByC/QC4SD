@@ -22,7 +22,8 @@ from QC4SD.quality_control.quality_control_file import setup_quality_control_fil
 from QC4SD.satellite_data.satellite_data import load_satellite_data, SatelliteData
 
 BASE_DIR = os.path.dirname(__file__)
-DEFAULT_QCF = os.path.join(BASE_DIR, 'quality_control', 'qc_default_settings.ini')
+DEFAULT_QCF = os.path.join(BASE_DIR, 'quality_control', 'qc_default_modis_settings.ini')
+#DEFAULT_QCF = os.path.join(BASE_DIR, 'quality_control', 'qc_default_landsat_settings.ini')
 
 
 def run(qcf, bands, files, output):
