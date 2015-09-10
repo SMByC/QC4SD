@@ -26,18 +26,40 @@ class ModisQC:
         gdal_dataset_qc = gdal.Open(self.qc_name)
         self.quality_control_raster = gdal_dataset_qc.ReadAsArray()
         del gdal_dataset_qc
+        # statistics for invalid pixel in respective field
+        self.invalid_pixels = {}
+        # this quality band need to be check
+        self.need_check = True
 
-        self.setup()
-
-    def setup(self):
+    def setup(self, qcf):
         # [MXD09A1] ########################################################
         # for MOD09A1 and MYD09A1
         if self.sd_shortname in ['MOD09A1', 'MYD09A1']:
+
+            # set the full name for this quality control band
             if self.id_name == 'rbq': self.full_name = 'Reflectance Band Quality'
             if self.id_name == 'sza': self.full_name = 'Solar Zenith Angle'
             if self.id_name == 'vza': self.full_name = 'View Zenith Angle'
             if self.id_name == 'rza': self.full_name = 'Relative Zenith Angle'
             if self.id_name == 'sf':  self.full_name = 'State flags'
+
+            # create and init the statistics fields dictionary to zero count value,
+            # for specific quality control band (id_name) that belonging this instance
+            keys_from_qcf = list(qcf['MXD09A1'].keys())
+            self.invalid_pixels = dict((k, 0) for k in keys_from_qcf if k.startswith(self.id_name+'_'))
+
+            # verificate if this quality band type need to check:
+            # if all items of this qc type in qcf are True, this means
+            # that this qc don't need to be check, all pass this qc
+            single_qcf_values = set([v for k,v in qcf['MXD09A1'].items() if k.startswith(self.id_name+'_')])
+            if len(single_qcf_values) == 1 and single_qcf_values.pop() == 'true':
+                self.need_check = False
+            if self.id_name == 'sza' or self.id_name == 'vza':
+                if qcf.getint('MXD09A1', self.id_name+'_min') == 0 and qcf.getint('MXD09A1', self.id_name+'_max') == 180:
+                    self.need_check = False
+            if self.id_name == 'rza':
+                if qcf.getint('MXD09A1', self.id_name+'_min') == -180 and qcf.getint('MXD09A1', self.id_name+'_max') == 180:
+                    self.need_check = False
 
     def quality_control_check(self, x, y, band, qcf):
         """Check if the specific pixel in x and y position pass or not
@@ -56,6 +78,9 @@ class ModisQC:
         :return: check list
         :rtype: dict
         """
+        # pass the qc if this quality band don't need to be check
+        if self.need_check is False:
+            return True
 
         # get the pixel value for specific band of quality control
         qc_pixel_value = self.quality_control_raster.item((x, y))
@@ -64,116 +89,173 @@ class ModisQC:
         # for MOD09A1 and MYD09A1
         if self.sd_shortname in ['MOD09A1', 'MYD09A1']:
 
+            # TODO: need work for increase the performance, check qcf if is false before
+
             #### Reflectance Band Quality (rbq) ####
             def rbq(qc_pixel_value):
-                # for save all check quality control items
-                pixel_check_list = {}
+                pixel_pass_quality_control = True
                 # prepare data
                 qc_bin_str = fix_binary_string(int2bin(qc_pixel_value), self.num_bits)
                 ### Modland QA
                 bits = qc_bin_str[0:2]
-                pixel_check_list['rbq_modland_qa_'+bits] = qcf.getboolean('MXD09A1', 'rbq_modland_qa_'+bits)
+                if qcf.getboolean('MXD09A1', 'rbq_modland_qa_'+bits) is False:
+                    self.invalid_pixels['rbq_modland_qa_'+bits] += 1
+                    pixel_pass_quality_control = False
                 ### Data Quality
                 bits = qc_bin_str[(band-1)*4+2:band*4+2]
-                pixel_check_list['rbq_data_quality_'+bits] = qcf.getboolean('MXD09A1', 'rbq_data_quality_'+bits)
+                if qcf.getboolean('MXD09A1', 'rbq_data_quality_'+bits) is False:
+                    self.invalid_pixels['rbq_data_quality_'+bits] += 1
+                    pixel_pass_quality_control = False
                 ### Atmospheric correction
                 qc_pixel_value = qc_bin_str[30]
-                pixel_check_list['rbq_atcorr_0'] = qcf.getboolean('MXD09A1', 'rbq_atcorr_0') or bool(int(qc_pixel_value))
-                pixel_check_list['rbq_atcorr_1'] = False if (bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'rbq_atcorr_1')) else True
+                if (qcf.getboolean('MXD09A1', 'rbq_atcorr_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['rbq_atcorr_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'rbq_atcorr_1'):
+                    self.invalid_pixels['rbq_atcorr_1'] += 1
+                    pixel_pass_quality_control = False
                 ### Adjacency correction
                 qc_pixel_value = qc_bin_str[31]
-                pixel_check_list['rbq_adjcorr_0'] = qcf.getboolean('MXD09A1', 'rbq_adjcorr_0') or bool(int(qc_pixel_value))
-                pixel_check_list['rbq_adjcorr_1'] = False if (bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'rbq_adjcorr_1')) else True
+                if (qcf.getboolean('MXD09A1', 'rbq_adjcorr_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['rbq_adjcorr_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'rbq_adjcorr_1'):
+                    self.invalid_pixels['rbq_adjcorr_1'] += 1
+                    pixel_pass_quality_control = False
 
-                return pixel_check_list
+                return pixel_pass_quality_control
 
             #### Solar Zenith Angle Band ####
             def sza(qc_pixel_value):
-                # for save all check quality control items
-                pixel_check_list = {}
+                pixel_pass_quality_control = True
                 # prepare data
                 qc_scale_factor = 0.01
                 qc_pixel_value = float(qc_pixel_value)*qc_scale_factor
                 ### Check
-                pixel_check_list['szangle_min'] = qc_pixel_value >= qcf.getfloat('MXD09A1', 'szangle_min')
-                pixel_check_list['szangle_max'] = qc_pixel_value <= qcf.getfloat('MXD09A1', 'szangle_max')
+                if (qc_pixel_value >= qcf.getfloat('MXD09A1', 'sza_min')) is False:
+                    self.invalid_pixels['sza_min'] += 1
+                    pixel_pass_quality_control = False
+                if (qc_pixel_value <= qcf.getfloat('MXD09A1', 'sza_max')) is False:
+                    self.invalid_pixels['sza_max'] += 1
+                    pixel_pass_quality_control = False
 
-                return pixel_check_list
+                return pixel_pass_quality_control
 
             #### View Zenith Angle Band ####
             def vza(qc_pixel_value):
-                # for save all check quality control items
-                pixel_check_list = {}
+                pixel_pass_quality_control = True
                 # prepare data
                 qc_scale_factor = 0.01
                 qc_pixel_value = float(qc_pixel_value)*qc_scale_factor
                 ### Check
-                pixel_check_list['vzangle_min'] = qc_pixel_value >= qcf.getfloat('MXD09A1', 'vzangle_min')
-                pixel_check_list['vzangle_max'] = qc_pixel_value <= qcf.getfloat('MXD09A1', 'vzangle_max')
+                if (qc_pixel_value >= qcf.getfloat('MXD09A1', 'vza_min')) is False:
+                    self.invalid_pixels['vza_min'] += 1
+                    pixel_pass_quality_control = False
+                if (qc_pixel_value <= qcf.getfloat('MXD09A1', 'vza_max')) is False:
+                    self.invalid_pixels['vza_max'] += 1
+                    pixel_pass_quality_control = False
 
-                return pixel_check_list
+                return pixel_pass_quality_control
 
             #### Relative Zenith Angle Band ####
             def rza(qc_pixel_value):
-                # for save all check quality control items
-                pixel_check_list = {}
+                pixel_pass_quality_control = True
                 # prepare data
                 qc_scale_factor = 0.01
                 qc_pixel_value = float(qc_pixel_value)*qc_scale_factor
                 ### Check
-                pixel_check_list['rzangle_min'] = qc_pixel_value >= qcf.getfloat('MXD09A1', 'rzangle_min')
-                pixel_check_list['rzangle_max'] = qc_pixel_value <= qcf.getfloat('MXD09A1', 'rzangle_max')
+                if (qc_pixel_value >= qcf.getfloat('MXD09A1', 'rza_min')) is False:
+                    self.invalid_pixels['rza_min'] += 1
+                    pixel_pass_quality_control = False
+                if (qc_pixel_value <= qcf.getfloat('MXD09A1', 'rza_max')) is False:
+                    self.invalid_pixels['rza_max'] += 1
+                    pixel_pass_quality_control = False
 
-                return pixel_check_list
+                return pixel_pass_quality_control
 
             #### State flags Band (sf) ####
             def sf(qc_pixel_value):
-                # for save all check quality control items
-                pixel_check_list = {}
+                pixel_pass_quality_control = True
                 # prepare data
                 qc_bin_str = fix_binary_string(int2bin(qc_pixel_value), self.num_bits)
                 ### Cloud State
                 bits = qc_bin_str[0:2]
-                pixel_check_list['sf_cloud_state_'+bits] = qcf.getboolean('MXD09A1', 'sf_cloud_state_'+bits)
+                if qcf.getboolean('MXD09A1', 'sf_cloud_state_'+bits) is False:
+                    self.invalid_pixels['sf_cloud_state_'+bits] += 1
+                    pixel_pass_quality_control = False
                 ### Cloud shadow
                 qc_pixel_value = qc_bin_str[2]
-                pixel_check_list['sf_cloud_shadow_0'] = qcf.getboolean('MXD09A1', 'sf_cloud_shadow_0') or bool(int(qc_pixel_value))
-                pixel_check_list['sf_cloud_shadow_1'] = False if (bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_cloud_shadow_1')) else True
+                if (qcf.getboolean('MXD09A1', 'sf_cloud_shadow_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['sf_cloud_shadow_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_cloud_shadow_1'):
+                    self.invalid_pixels['sf_cloud_shadow_1'] += 1
+                    pixel_pass_quality_control = False
                 ### Land/Water flag
                 bits = qc_bin_str[3:6]
-                pixel_check_list['sf_land_water_'+bits] = qcf.getboolean('MXD09A1', 'sf_land_water_'+bits)
+                if qcf.getboolean('MXD09A1', 'sf_land_water_'+bits) is False:
+                    self.invalid_pixels['sf_land_water_'+bits] += 1
+                    pixel_pass_quality_control = False
                 ### Aerosol Quantity
                 bits = qc_bin_str[6:8]
-                pixel_check_list['sf_aerosol_quantity_'+bits] = qcf.getboolean('MXD09A1', 'sf_aerosol_quantity_'+bits)
+                if qcf.getboolean('MXD09A1', 'sf_aerosol_quantity_'+bits) is False:
+                    self.invalid_pixels['sf_aerosol_quantity_'+bits] += 1
+                    pixel_pass_quality_control = False
                 ### cirrus_detected
                 bits = qc_bin_str[8:10]
-                pixel_check_list['sf_cirrus_detected_'+bits] = qcf.getboolean('MXD09A1', 'sf_cirrus_detected_'+bits)
+                if qcf.getboolean('MXD09A1', 'sf_cirrus_detected_'+bits) is False:
+                    self.invalid_pixels['sf_cirrus_detected_'+bits] += 1
+                    pixel_pass_quality_control = False
                 ### Internal Cloud Algorithm Flag
                 qc_pixel_value = qc_bin_str[10]
-                pixel_check_list['sf_internal_cloud_algorithm_0'] = qcf.getboolean('MXD09A1', 'sf_internal_cloud_algorithm_0') or bool(int(qc_pixel_value))
-                pixel_check_list['sf_internal_cloud_algorithm_1'] = False if (bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_internal_cloud_algorithm_1')) else True
+                if (qcf.getboolean('MXD09A1', 'sf_internal_cloud_algorithm_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['sf_internal_cloud_algorithm_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_internal_cloud_algorithm_1'):
+                    self.invalid_pixels['sf_internal_cloud_algorithm_1'] += 1
+                    pixel_pass_quality_control = False
                 ### Internal Fire Algorithm Flag
                 qc_pixel_value = qc_bin_str[11]
-                pixel_check_list['sf_internal_fire_algorithm_0'] = qcf.getboolean('MXD09A1', 'sf_internal_fire_algorithm_0') or bool(int(qc_pixel_value))
-                pixel_check_list['sf_internal_fire_algorithm_1'] = False if (bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_internal_fire_algorithm_1')) else True
+                if (qcf.getboolean('MXD09A1', 'sf_internal_fire_algorithm_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['sf_internal_fire_algorithm_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_internal_fire_algorithm_1'):
+                    self.invalid_pixels['sf_internal_fire_algorithm_1'] += 1
+                    pixel_pass_quality_control = False
                 ### MOD35 snow/ice flag
                 qc_pixel_value = qc_bin_str[12]
-                pixel_check_list['sf_mod35_snow_ice_0'] = qcf.getboolean('MXD09A1', 'sf_mod35_snow_ice_0') or bool(int(qc_pixel_value))
-                pixel_check_list['sf_mod35_snow_ice_1'] = False if (bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_mod35_snow_ice_1')) else True
+                if (qcf.getboolean('MXD09A1', 'sf_mod35_snow_ice_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['sf_mod35_snow_ice_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_mod35_snow_ice_1'):
+                    self.invalid_pixels['sf_mod35_snow_ice_1'] += 1
+                    pixel_pass_quality_control = False
                 ### Pixel adjacent to cloud
                 qc_pixel_value = qc_bin_str[13]
-                pixel_check_list['sf_pixel_adjacent_to_cloud_0'] = qcf.getboolean('MXD09A1', 'sf_pixel_adjacent_to_cloud_0') or bool(int(qc_pixel_value))
-                pixel_check_list['sf_pixel_adjacent_to_cloud_1'] = False if (bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_pixel_adjacent_to_cloud_1')) else True
+                if (qcf.getboolean('MXD09A1', 'sf_pixel_adjacent_to_cloud_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['sf_pixel_adjacent_to_cloud_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_pixel_adjacent_to_cloud_1'):
+                    self.invalid_pixels['sf_pixel_adjacent_to_cloud_1'] += 1
+                    pixel_pass_quality_control = False
                 ### BRDF correction performed
                 qc_pixel_value = qc_bin_str[14]
-                pixel_check_list['sf_brdf_correction_performed_0'] = qcf.getboolean('MXD09A1', 'sf_brdf_correction_performed_0') or bool(int(qc_pixel_value))
-                pixel_check_list['sf_brdf_correction_performed_1'] = False if (bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_brdf_correction_performed_1')) else True
+                if (qcf.getboolean('MXD09A1', 'sf_brdf_correction_performed_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['sf_brdf_correction_performed_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_brdf_correction_performed_1'):
+                    self.invalid_pixels['sf_brdf_correction_performed_1'] += 1
+                    pixel_pass_quality_control = False
                 ### Internal Snow Mask
                 qc_pixel_value = qc_bin_str[15]
-                pixel_check_list['sf_internal_snow_mask_0'] = qcf.getboolean('MXD09A1', 'sf_internal_snow_mask_0') or bool(int(qc_pixel_value))
-                pixel_check_list['sf_internal_snow_mask_1'] = False if (bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_internal_snow_mask_1')) else True
+                if (qcf.getboolean('MXD09A1', 'sf_internal_snow_mask_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['sf_internal_snow_mask_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_internal_snow_mask_1'):
+                    self.invalid_pixels['sf_internal_snow_mask_1'] += 1
+                    pixel_pass_quality_control = False
 
-                return pixel_check_list
+                return pixel_pass_quality_control
 
             # switch case for quality control band
             quality_control_band = {
@@ -186,5 +268,5 @@ class ModisQC:
 
             return quality_control_band[self.id_name](qc_pixel_value)
 
-                # TODO Q1
+            # TODO Q1
 

@@ -28,14 +28,19 @@ class QualityControl:
         self.band = band
         self.band_name = 'band'+fix_zeros(band, 2)
 
-        self.SatelliteData_list = SatelliteData_list
+        self.SatelliteData_list = SatelliteData_list  # TODO delete
         self.qcf = quality_control_file
 
         self.qc_check_lists = {}
 
         self.output_driver = None
         self.output_bands = []
-        self.output_filename = "{0}_{1}_band{2}.hdf".format(SatelliteData.tile, SatelliteData.shortname, fix_zeros(band, 2))
+        self.output_filename = "{0}_{1}_band{2}.tif".format(SatelliteData.tile, SatelliteData.shortname, fix_zeros(band, 2))
+
+        # initialize quality control bands class
+        for sd in SatelliteData.list:
+            for qc_id_name, qc_checker in sd.qc_bands.items():
+                qc_checker.setup(quality_control_file)
 
     def __str__(self):
         return self.band_name
@@ -60,13 +65,13 @@ class QualityControl:
                 if data_band_pixel == int(nodata_value): # or True:
                     continue
                 # check pixel with all items of all quality control bands configured
-                pixel_check_list = {}
+                pixel_check_list = []
                 for qc_id_name, qc_checker in sd.qc_bands.items():
-                    pixel_check_list[qc_checker.full_name] = qc_checker.quality_control_check(x, y, self.band, self.qcf)
+                    pixel_check_list.append(qc_checker.quality_control_check(x, y, self.band, self.qcf))
 
                 # the pixel pass or not pass the quality control:
                 # check if all validate quality control for this pixel are True
-                pixel_pass_quality_control = not (False in [j for sublist in [list(i.values()) for i in list(pixel_check_list.values())] for j in sublist])
+                pixel_pass_quality_control = not (False in pixel_check_list)
 
                 # save check lists of quality control per pixel
                 #self.qc_check_lists[(x, y)] = pixel_check_list  # memory leak
@@ -97,7 +102,7 @@ class QualityControl:
         rows = gdal_data_band.RasterYSize
 
         # settings projection and output raster
-        driver = gdal.GetDriverByName('NETCDF')
+        driver = gdal.GetDriverByName('GTiff')
         nbands = len(self.output_bands)
         outRaster = driver.Create(os.path.join(output_dir, self.output_filename), cols, rows, nbands, gdal.GDT_Int16)
         outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
