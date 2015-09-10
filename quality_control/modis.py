@@ -57,19 +57,17 @@ class ModisQC:
         :rtype: dict
         """
 
-        # for save all check quality control items
-        pixel_check_list = {}
-
         # get the pixel value for specific band of quality control
         qc_pixel_value = self.quality_control_raster.item((x, y))
-        #print(qc_pixel_value)
 
         # [MXD09A1] ########################################################
         # for MOD09A1 and MYD09A1
         if self.sd_shortname in ['MOD09A1', 'MYD09A1']:
 
             #### Reflectance Band Quality (rbq) ####
-            if self.id_name == 'rbq':
+            def rbq(qc_pixel_value):
+                # for save all check quality control items
+                pixel_check_list = {}
                 # prepare data
                 qc_bin_str = fix_binary_string(int2bin(qc_pixel_value), self.num_bits)
                 ### Modland QA
@@ -87,8 +85,12 @@ class ModisQC:
                 pixel_check_list['rbq_adjcorr_0'] = qcf.getboolean('MXD09A1', 'rbq_adjcorr_0') or bool(int(qc_pixel_value))
                 pixel_check_list['rbq_adjcorr_1'] = False if (bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'rbq_adjcorr_1')) else True
 
+                return pixel_check_list
+
             #### Solar Zenith Angle Band ####
-            if self.id_name == 'sza':
+            def sza(qc_pixel_value):
+                # for save all check quality control items
+                pixel_check_list = {}
                 # prepare data
                 qc_scale_factor = 0.01
                 qc_pixel_value = float(qc_pixel_value)*qc_scale_factor
@@ -96,8 +98,12 @@ class ModisQC:
                 pixel_check_list['szangle_min'] = qc_pixel_value >= qcf.getfloat('MXD09A1', 'szangle_min')
                 pixel_check_list['szangle_max'] = qc_pixel_value <= qcf.getfloat('MXD09A1', 'szangle_max')
 
+                return pixel_check_list
+
             #### View Zenith Angle Band ####
-            if self.id_name == 'vza':
+            def vza(qc_pixel_value):
+                # for save all check quality control items
+                pixel_check_list = {}
                 # prepare data
                 qc_scale_factor = 0.01
                 qc_pixel_value = float(qc_pixel_value)*qc_scale_factor
@@ -105,8 +111,12 @@ class ModisQC:
                 pixel_check_list['vzangle_min'] = qc_pixel_value >= qcf.getfloat('MXD09A1', 'vzangle_min')
                 pixel_check_list['vzangle_max'] = qc_pixel_value <= qcf.getfloat('MXD09A1', 'vzangle_max')
 
+                return pixel_check_list
+
             #### Relative Zenith Angle Band ####
-            if self.id_name == 'rza':
+            def rza(qc_pixel_value):
+                # for save all check quality control items
+                pixel_check_list = {}
                 # prepare data
                 qc_scale_factor = 0.01
                 qc_pixel_value = float(qc_pixel_value)*qc_scale_factor
@@ -114,8 +124,12 @@ class ModisQC:
                 pixel_check_list['rzangle_min'] = qc_pixel_value >= qcf.getfloat('MXD09A1', 'rzangle_min')
                 pixel_check_list['rzangle_max'] = qc_pixel_value <= qcf.getfloat('MXD09A1', 'rzangle_max')
 
+                return pixel_check_list
+
             #### State flags Band (sf) ####
-            if self.id_name == 'sf':
+            def sf(qc_pixel_value):
+                # for save all check quality control items
+                pixel_check_list = {}
                 # prepare data
                 qc_bin_str = fix_binary_string(int2bin(qc_pixel_value), self.num_bits)
                 ### Cloud State
@@ -159,8 +173,18 @@ class ModisQC:
                 pixel_check_list['sf_internal_snow_mask_0'] = qcf.getboolean('MXD09A1', 'sf_internal_snow_mask_0') or bool(int(qc_pixel_value))
                 pixel_check_list['sf_internal_snow_mask_1'] = False if (bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_internal_snow_mask_1')) else True
 
+                return pixel_check_list
+
+            # switch case for quality control band
+            quality_control_band = {
+                'rbq': rbq,
+                'sza': sza,
+                'vza': vza,
+                'rza': rza,
+                'sf': sf,
+            }
+
+            return quality_control_band[self.id_name](qc_pixel_value)
 
                 # TODO Q1
 
-
-        return pixel_check_list
