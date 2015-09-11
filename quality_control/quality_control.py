@@ -23,12 +23,11 @@ class QualityControl:
     # save all instances
     list = []
 
-    def __init__(self, SatelliteData_list, quality_control_file, band):
+    def __init__(self, quality_control_file, band):
         QualityControl.list.append(self)
         self.band = band
         self.band_name = 'band'+fix_zeros(band, 2)
 
-        self.SatelliteData_list = SatelliteData_list  # TODO delete
         self.qcf = quality_control_file
 
         self.qc_check_lists = {}
@@ -36,6 +35,9 @@ class QualityControl:
         self.output_driver = None
         self.output_bands = []
         self.output_filename = "{0}_{1}_band{2}.tif".format(SatelliteData.tile, SatelliteData.shortname, fix_zeros(band, 2))
+
+        # for save some statistics fields after check the quality control
+        self.quality_control_statistics = {}
 
         # initialize quality control bands class
         for sd in SatelliteData.list:
@@ -53,7 +55,9 @@ class QualityControl:
         """
 
         # for each file
-        for sd in self.SatelliteData_list:
+        for sd in SatelliteData.list:
+            # some statistics for this satellite data (pixels and quality controls bands)
+            sd_statistics = {'total_pixels': sd.get_total_pixels(), 'total_invalid_pixels': 0, 'invalid_pixels': {}}
             # get raster for band to process
             data_band_raster = sd.get_data_band(self.band)
             # get NoData value specific per band/product
@@ -61,6 +65,8 @@ class QualityControl:
 
             # process each pixel for the band to process
             for (x, y), data_band_pixel in np.ndenumerate(data_band_raster):
+                if not (0 < x < 200 and 200 < y < 400):
+                    continue
                 # if pixel is not valid then don't check it
                 if data_band_pixel == int(nodata_value): # or True:
                     continue
@@ -68,29 +74,28 @@ class QualityControl:
                 pixel_check_list = []
                 for qc_id_name, qc_checker in sd.qc_bands.items():
                     pixel_check_list.append(qc_checker.quality_control_check(x, y, self.band, self.qcf))
+                    sd_statistics['invalid_pixels'][qc_checker.full_name] = qc_checker.invalid_pixels
 
                 # the pixel pass or not pass the quality control:
                 # check if all validate quality control for this pixel are True
                 pixel_pass_quality_control = not (False in pixel_check_list)
 
-                # save check lists of quality control per pixel
-                #self.qc_check_lists[(x, y)] = pixel_check_list  # memory leak
-
                 if y == 0:
-                    print(x,y,pixel_pass_quality_control)
+                    print(x,y)
 
                 # if the pixel not pass the quality control, replace with NoData value
                 if not pixel_pass_quality_control:
                     data_band_raster[x, y] = nodata_value
+                    sd_statistics['total_invalid_pixels'] += 1
 
-            #print(self.qc_check_lists)
+            self.quality_control_statistics[sd.date_str] = sd_statistics
 
             # save raster band for each input file with QC in sorted list chronologically
             self.output_bands.append(data_band_raster)
 
     def save_results(self, output_dir):
         # get gdal properties of one of data band
-        sd = self.SatelliteData_list[0]
+        sd = SatelliteData.list[0]
         data_band_name = [x for x in sd.sub_datasets if 'b'+fix_zeros(self.band, 2) in x[1]][0][0]
         gdal_data_band = gdal.Open(data_band_name)
         geotransform = gdal_data_band.GetGeoTransform()
@@ -102,7 +107,7 @@ class QualityControl:
         rows = gdal_data_band.RasterYSize
 
         # settings projection and output raster
-        driver = gdal.GetDriverByName('GTiff')
+        driver = gdal.GetDriverByName('NETCDF')
         nbands = len(self.output_bands)
         outRaster = driver.Create(os.path.join(output_dir, self.output_filename), cols, rows, nbands, gdal.GDT_Int16)
         outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))

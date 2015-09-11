@@ -81,9 +81,20 @@ def run(qcf, bands, files, output):
 
     # process the quality control per band and save result
     for band in bands:
-        qc = QualityControl(SatelliteData.list, config_run['quality_control_file'], band)
+        qc = QualityControl(config_run['quality_control_file'], band)
         qc.process()
         qc.save_results(config_run['output'])
+
+        # print some statistics
+        for sd_name, sd_invalid_pixels in qc.quality_control_statistics.items():
+            print()
+            print(sd_name)
+            print('total_invalid_pixels', sd_invalid_pixels['total_invalid_pixels'])
+            for qc_id_name, qc_invalid_pixels in sd_invalid_pixels['invalid_pixels'].items():
+                print('  '+qc_id_name)
+                for band, invalid in qc_invalid_pixels.items():
+                    if invalid != 0:
+                        print('    ', band+':', invalid)
 
 
 def script():
