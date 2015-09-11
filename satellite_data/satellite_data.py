@@ -10,6 +10,12 @@ from osgeo import gdal
 
 
 class SatelliteData:
+    """Generic and parent class for satellite data, this
+    contain the basic instructions, variables and functions.
+    This need to be inherit from specialize class, such as,
+    Modis or Landsat
+    """
+
     # static fields (globals)
     satellite = None
     shortname = None
@@ -55,6 +61,8 @@ def new(file):
 
 
 def load_satellite_data(config_run):
+    """Read and load all satellite data from files
+    """
 
     # check number of files
     if len(config_run['files']) == 0:

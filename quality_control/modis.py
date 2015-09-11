@@ -31,7 +31,6 @@ class ModisQC:
         # this quality band need to be check
         self.need_check = True
 
-    def setup(self, qcf):
         # [MXD09A1] ########################################################
         # for MOD09A1 and MYD09A1
         if self.sd_shortname in ['MOD09A1', 'MYD09A1']:
@@ -42,6 +41,18 @@ class ModisQC:
             if self.id_name == 'vza': self.full_name = 'View Zenith Angle'
             if self.id_name == 'rza': self.full_name = 'Relative Zenith Angle'
             if self.id_name == 'sf':  self.full_name = 'State flags'
+
+    def init_statistics(self, qcf):
+        """Configure and initialize statistics values. This need to be
+        called for restart statistics for process quality control check
+        for each new satellite data.
+
+        :param qcf: quality control file
+        :type qcf: configparse
+        """
+        # [MXD09A1] ########################################################
+        # for MOD09A1 and MYD09A1
+        if self.sd_shortname in ['MOD09A1', 'MYD09A1']:
 
             # create and init the statistics fields dictionary to zero count value,
             # for specific quality control band (id_name) that belonging this instance

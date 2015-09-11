@@ -42,7 +42,7 @@ class QualityControl:
         # initialize quality control bands class
         for sd in SatelliteData.list:
             for qc_id_name, qc_checker in sd.qc_bands.items():
-                qc_checker.setup(quality_control_file)
+                qc_checker.init_statistics(quality_control_file)
 
     def __str__(self):
         return self.band_name
@@ -94,6 +94,13 @@ class QualityControl:
             self.output_bands.append(data_band_raster)
 
     def save_results(self, output_dir):
+        """Save all processed files in one file per each data band to process,
+        each file to save has the precessed files as bands.
+
+        :param output_dir: directory to save the output file
+        :type output_dir: path
+        """
+
         # get gdal properties of one of data band
         sd = SatelliteData.list[0]
         data_band_name = [x for x in sd.sub_datasets if 'b'+fix_zeros(self.band, 2) in x[1]][0][0]
@@ -107,7 +114,7 @@ class QualityControl:
         rows = gdal_data_band.RasterYSize
 
         # settings projection and output raster
-        driver = gdal.GetDriverByName('NETCDF')
+        driver = gdal.GetDriverByName('GTiff')
         nbands = len(self.output_bands)
         outRaster = driver.Create(os.path.join(output_dir, self.output_filename), cols, rows, nbands, gdal.GDT_Int16)
         outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))

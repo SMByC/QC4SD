@@ -44,6 +44,12 @@ class MODIS(SatelliteData):
         self.set_quality_control_bands()
 
     def set_quality_control_bands(self):
+        """Create all quality control bands class (ModisQC)
+        based on the type of MODIS products. Create one
+        Modis quality control (ModisQC) for each quality
+        control band of this satellite data instance.
+        """
+
         self.qc_bands = {}
 
         # for MOD09/MYD09 A1
