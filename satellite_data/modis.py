@@ -32,6 +32,9 @@ class MODIS(SatelliteData):
         dt_d = [int(x) for x in self.metadata['PRODUCTIONDATETIME'].split('T')[0].split('-')]
         dt_h = [int(x) for x in self.metadata['PRODUCTIONDATETIME'].replace('.', ':').split('T')[1].split(':')[0:3]]
         self.datetime = datetime(dt_d[0], dt_d[1], dt_d[2], dt_h[0], dt_h[1], dt_h[2])
+        self.date_str = "{0}-{1}-{2}".format(self.datetime.year,
+                                             fix_zeros(self.datetime.month, 2),
+                                             fix_zeros(self.datetime.day, 2))
 
         # save in globals vars of class
         SatelliteData.satellite = self.satellite
@@ -89,8 +92,10 @@ class MODIS(SatelliteData):
         gdal_data_band = gdal.Open(data_band_name)
         return gdal_data_band.GetRasterBand(1).GetNoDataValue()
 
-
     def get_quality_control_bands(self, band):
-
-
         return [x for x in self.sub_datasets if 'b0'+str(band) in x[1]][0][0]
+
+    def get_total_pixels(self):
+        rows = int(self.metadata["DATAROWS500M"])
+        columns = int(self.metadata["DATACOLUMNS500M"])
+        return rows*columns
