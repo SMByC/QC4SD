@@ -1,6 +1,6 @@
 # QC4SD #
 
-The Quality Control for Satellite Data (QC4SD) is a program for check the quality 
+The Quality Control Algorithm Satellite Data (QC4SD) is a program for check the quality 
 control for satellite data (suck as MODIS and LandSat) applying, pixel per pixel, 
 different rules using the quality control bands. This is similar to TiSeG program, 
 but QC4SD oriented to make quality control software more flexible, scalable and 
