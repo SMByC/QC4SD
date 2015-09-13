@@ -59,6 +59,7 @@ class QualityControl:
             # some statistics for this satellite data (pixels and quality controls bands)
             sd_statistics = {'total_pixels': sd.get_total_pixels(), 'total_invalid_pixels': 0, 'invalid_pixels': {}}
             # get raster for band to process
+            # TODO: optimize/performance the table open/access in memory (pytables?)
             data_band_raster = sd.get_data_band(self.band)
             # get NoData value specific per band/product
             nodata_value = sd.get_nodata_value(self.band)

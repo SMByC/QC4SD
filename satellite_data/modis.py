@@ -87,6 +87,9 @@ class MODIS(SatelliteData):
         :return: raster of the data band
         :rtype: ndarray
         """
+
+        # TODO: optimize/performance the table open/access in memory (pytables?)
+
         data_band_name = [x for x in self.sub_datasets if 'b'+fix_zeros(band, 2) in x[1]][0][0]
         gdal_data_band = gdal.Open(data_band_name)
         data_band_raster = gdal_data_band.ReadAsArray()
