@@ -6,7 +6,10 @@
 #  Email: xcorredorl at ideam.gov.co
 
 import os
-from osgeo import gdal
+try:
+    from osgeo import gdal
+except ImportError:
+    import gdal
 
 
 class SatelliteData:

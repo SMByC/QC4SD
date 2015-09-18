@@ -5,7 +5,10 @@
 #  Authors: Xavier Corredor Llano
 #  Email: xcorredorl at ideam.gov.co
 
-from osgeo import gdal
+try:
+    from osgeo import gdal
+except ImportError:
+    import gdal
 
 from QC4SD.lib import fix_binary_string, int2bin
 

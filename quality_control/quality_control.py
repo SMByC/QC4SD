@@ -8,7 +8,10 @@
 import os
 import osr
 import numpy as np
-from osgeo import gdal
+try:
+    from osgeo import gdal
+except ImportError:
+    import gdal
 
 from QC4SD.lib import fix_zeros
 from QC4SD.satellite_data.satellite_data import SatelliteData
@@ -66,8 +69,8 @@ class QualityControl:
 
             # process each pixel for the band to process
             for (x, y), data_band_pixel in np.ndenumerate(data_band_raster):
-                if not (0 < x < 200 and 200 < y < 400):
-                    continue
+                #if not (0 < x < 200 and 200 < y < 400):
+                #    continue
                 # if pixel is not valid then don't check it
                 if data_band_pixel == int(nodata_value): # or True:
                     continue
@@ -81,8 +84,8 @@ class QualityControl:
                 # check if all validate quality control for this pixel are True
                 pixel_pass_quality_control = not (False in pixel_check_list)
 
-                if y == 0:
-                    print(x,y)
+                #if y == 0:
+                #    print(x,y)
 
                 # if the pixel not pass the quality control, replace with NoData value
                 if not pixel_pass_quality_control:
