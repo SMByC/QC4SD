@@ -92,9 +92,9 @@ def run(qcf, bands, files, output):
             print('total_invalid_pixels', sd_invalid_pixels['total_invalid_pixels'])
             for qc_id_name, qc_invalid_pixels in sd_invalid_pixels['invalid_pixels'].items():
                 print('  '+qc_id_name)
-                for band, invalid in qc_invalid_pixels.items():
+                for qc_item, invalid in qc_invalid_pixels.items():
                     if invalid != 0:
-                        print('    ', band+':', invalid)
+                        print('    ', qc_item+':', invalid)
 
 
 def script():
