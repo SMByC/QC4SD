@@ -45,6 +45,13 @@ class ModisQC:
             if self.id_name == 'rza': self.full_name = 'Relative Zenith Angle'
             if self.id_name == 'sf':  self.full_name = 'State flags'
 
+        # [MXD09Q1] ########################################################
+        # for MOD09Q1 and MYD09Q1
+        if self.sd_shortname in ['MOD09Q1', 'MYD09Q1']:
+
+            # set the full name for this quality control band
+            if self.id_name == 'rbq': self.full_name = 'Reflectance Band Quality'
+
     def init_statistics(self, qcf):
         """Configure and initialize statistics values. This need to be
         called for restart statistics for process quality control check
@@ -62,7 +69,7 @@ class ModisQC:
             keys_from_qcf = list(qcf['MXD09A1'].keys())
             self.invalid_pixels = dict((k, 0) for k in keys_from_qcf if k.startswith(self.id_name+'_'))
 
-            # verificate if this quality band type need to check:
+            # verification if this quality band type need to check:
             # if all items of this qc type in qcf are True, this means
             # that this qc don't need to be check, all pass this qc
             single_qcf_values = set([v for k,v in qcf['MXD09A1'].items() if k.startswith(self.id_name+'_')])
@@ -84,7 +91,7 @@ class ModisQC:
             keys_from_qcf = list(qcf['MXD09Q1'].keys())
             self.invalid_pixels = dict((k, 0) for k in keys_from_qcf if k.startswith(self.id_name+'_'))
 
-            # verificate if this quality band type need to check:
+            # verification if this quality band type need to check:
             # if all items of this qc type in qcf are True, this means
             # that this qc don't need to be check, all pass this qc
             single_qcf_values = set([v for k,v in qcf['MXD09Q1'].items() if k.startswith(self.id_name+'_')])
