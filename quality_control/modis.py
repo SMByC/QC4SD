@@ -75,6 +75,22 @@ class ModisQC:
                 if qcf.getint('MXD09A1', self.id_name+'_min') == -180 and qcf.getint('MXD09A1', self.id_name+'_max') == 180:
                     self.need_check = False
 
+        # [MXD09Q1] ########################################################
+        # for MOD09Q1 and MYD09Q1
+        if self.sd_shortname in ['MOD09Q1', 'MYD09Q1']:
+
+            # create and init the statistics fields dictionary to zero count value,
+            # for specific quality control band (id_name) that belonging this instance
+            keys_from_qcf = list(qcf['MXD09Q1'].keys())
+            self.invalid_pixels = dict((k, 0) for k in keys_from_qcf if k.startswith(self.id_name+'_'))
+
+            # verificate if this quality band type need to check:
+            # if all items of this qc type in qcf are True, this means
+            # that this qc don't need to be check, all pass this qc
+            single_qcf_values = set([v for k,v in qcf['MXD09Q1'].items() if k.startswith(self.id_name+'_')])
+            if len(single_qcf_values) == 1 and single_qcf_values.pop() == 'true':
+                self.need_check = False
+
     def quality_control_check(self, x, y, band, qcf):
         """Check if the specific pixel in x and y position pass or not
         pass all quality controls, this is evaluate with the quality
