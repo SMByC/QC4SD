@@ -12,8 +12,8 @@ except ImportError:
     import gdal
 
 
-from QC4SD.satellite_data.satellite_data import SatelliteData
 from QC4SD.lib import fix_zeros
+from QC4SD.satellite_data.satellite_data import SatelliteData
 from QC4SD.quality_control.modis import ModisQC
 
 

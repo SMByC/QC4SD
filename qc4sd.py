@@ -14,7 +14,6 @@
 ##################################################################
 
 import os
-import sys
 import argparse
 
 from QC4SD.quality_control.quality_control import QualityControl
