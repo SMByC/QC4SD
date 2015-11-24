@@ -40,6 +40,9 @@ class SatelliteData:
     def __str__(self):
         return self.file_name
 
+    def get_metadata(self, variable_name):
+        return [v for k,v in self.metadata.items() if k.startswith(variable_name)][0]
+
 
 def new(file):
     """Create new instance of child of SatelliteData class
@@ -51,7 +54,7 @@ def new(file):
     """
 
     gdal_dataset = gdal.Open(file)
-    satellite_instrument = gdal_dataset.GetMetadata()["ASSOCIATEDINSTRUMENTSHORTNAME"]
+    satellite_instrument = [v for k,v in gdal_dataset.GetMetadata().items() if k.startswith("ASSOCIATEDINSTRUMENTSHORTNAME")][0]
 
     if satellite_instrument == 'MODIS':
         from QC4SD.satellite_data.modis import MODIS
