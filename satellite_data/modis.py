@@ -39,6 +39,10 @@ class MODIS(SatelliteData):
         self.date_str = "{0}-{1}-{2}".format(self.datetime.year,
                                              fix_zeros(self.datetime.month, 2),
                                              fix_zeros(self.datetime.day, 2))
+        # load columns and rows
+        self.cols = int(self.get_metadata("DATACOLUMNS500M"))
+        self.rows = int(self.get_metadata("DATAROWS500M"))
+        self.total_pixels = self.rows*self.cols
 
         # save in globals vars of class
         SatelliteData.satellite = self.satellite
@@ -107,8 +111,3 @@ class MODIS(SatelliteData):
 
     def get_quality_control_bands(self, band):
         return [x for x in self.sub_datasets if 'b0'+str(band) in x[1]][0][0]
-
-    def get_total_pixels(self):
-        rows = int(self.get_metadata("DATAROWS500M"))
-        columns = int(self.get_metadata("DATACOLUMNS500M"))
-        return rows*columns
