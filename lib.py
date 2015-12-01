@@ -65,3 +65,15 @@ def int2bin(value):
     assert isinstance(value, int), "value must be a integer"
     return "{0:b}".format(value)
 
+
+def chunks(l, n):
+    """Split a list into evenly sized chunks
+
+    :param l: list to chunk
+    :type l: list
+    :param n: n sizes to chunk
+    :type n: int
+    :rtype: list
+    """
+    n = max(1, n)
+    return [l[i:i + n] for i in range(0, len(l), n)]
