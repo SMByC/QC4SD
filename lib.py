@@ -7,8 +7,10 @@
 #  Authors: Xavier Corredor Llano
 #  Email: xcorredorl at ideam.gov.co
 
+from collections import Counter
 
 ###############################################################################
+
 
 def fix_zeros(value, digits):
     """Adjust the left zeros for integer numbers.
@@ -77,3 +79,36 @@ def chunks(l, n):
     """
     n = max(1, n)
     return [l[i:i + n] for i in range(0, len(l), n)]
+
+
+def merge_dicts(a, b):
+    """Merge and sums all items with the same keys for two
+    dictionaries 'a' and 'b' with support for merge and sums
+    items for dicts into the dicts, like this:
+
+        >>> a = {'a': 1, 'b': 2, 'c': 3, 'k': {'t': 5}}
+        >>> b = {'b': 3, 'c': 4, 'f': 5, 'k': {'r': 9, 't': 2}}
+        >>> merge_dicts(a, b)
+        {'a': 1, 'b': 5, 'c': 7, 'f': 5, 'k': {'r': 9, 't': 7}})
+
+    :param a: first dict to merge
+    :type a: dict
+    :param b: second dict to merge
+    :type b: dict
+    :return: sums and merge of all items in a container
+    :rtype: Counter
+    """
+    for k, v in a.items():
+        if isinstance(v, dict): a[k] = Counter(v)
+    for k, v in b.items():
+        if isinstance(v, dict): b[k] = Counter(v)
+    common_items = []
+    for common_key in (set(a) & set(b)):
+        if isinstance(a[common_key], Counter) and isinstance(b[common_key], Counter):
+            common_items.append((common_key, merge_dicts(a[common_key], b[common_key])))
+        else:
+            common_items += list((Counter({common_key: a[common_key]}) + Counter({common_key: b[common_key]})).items())
+    a_no_common = [(k, a[k]) for k in list(a.keys() - (set(a) & set(b)))]
+    b_no_common = [(k, b[k]) for k in list(b.keys() - (set(a) & set(b)))]
+    return Counter(dict(a_no_common + b_no_common + common_items))
+
