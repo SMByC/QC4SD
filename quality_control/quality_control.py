@@ -85,14 +85,12 @@ class QualityControl:
                     statistics['total_invalid_pixels'] += 1
 
         #return data_band_raster_x, sd.statistics
-        return "{0}--{1}".format(x_chunk[0], x_chunk[-1]), statistics, pixels_no_pass_qc
+        return int(round((x_chunk[-1]*100)/sd.rows, 0)), statistics, pixels_no_pass_qc
 
     @staticmethod
     def calculate(func, args):
-        result, statistics, pixels_no_pass_qc = func(*args)
-        return '{0} says that {1} {2}'.format(
-            multiprocessing.current_process().name,
-            func.__name__, result), statistics, pixels_no_pass_qc
+        progress, statistics, pixels_no_pass_qc = func(*args)
+        return "{0}%..".format(progress), statistics, pixels_no_pass_qc
 
     def meta_calculate(self, args):
         return self.calculate(*args)
@@ -103,6 +101,10 @@ class QualityControl:
         raster 2d array checked (QC) sorted chronologically by date
         of input file.
         """
+
+        number_of_processes = multiprocessing.cpu_count() - 1
+        if number_of_processes > 1:
+            print('\nMulti-processing with {0} processes\n'.format(number_of_processes))
 
         # for each file
         for sd in SatelliteData.list:
@@ -117,7 +119,6 @@ class QualityControl:
             ################################
             # start multiprocess
             multiprocessing.freeze_support()
-            number_of_processes = multiprocessing.cpu_count() - 1
 
             # calculate the number of chunks
             n_chunks = ceil(sd.rows/(number_of_processes*floor(sd.rows/1000)))
@@ -125,18 +126,18 @@ class QualityControl:
             # divide the rows in n_chunks to process matrix in multiprocess (multi-rows)
             x_chunks = chunks(range(sd.rows), n_chunks)
 
-            print('Creating pool with %d processes\n' % number_of_processes)
 
             with multiprocessing.Pool(number_of_processes) as pool:
                 tasks = [(self.do_check_qc_by_chunk, (x_chunk, sd))
                          for x_chunk in x_chunks]
 
                 imap_tasks = pool.imap(self.meta_calculate, tasks)
+                print('Processing the image {0}  in the band {1}:\n\t0%..'.format(sd.file_name, self.band), end="", flush=True)
+
                 #all_pixels_no_pass_qc = np.empty((0, 2), dtype=int)
                 all_pixels_no_pass_qc = []
-                print('Ordered results using pool.imap():')
-                for task, statistics, pixels_no_pass_qc in imap_tasks:
-                    print('\t', task)
+                for progress, statistics, pixels_no_pass_qc in imap_tasks:
+                    print(progress, end="", flush=True)
                     sd_statistics = merge_dicts(sd_statistics, statistics)
                     #all_pixels_no_pass_qc = np.append(all_pixels_no_pass_qc, pixels_no_pass_qc, axis=0)
                     all_pixels_no_pass_qc += pixels_no_pass_qc
@@ -154,6 +155,8 @@ class QualityControl:
 
             # clean
             del self.data_band_raster_to_process, sd_statistics, data_band_raster
+
+            print(' done')
 
     def save_results(self, output_dir):
         """Save all processed files in one file per each data band to process,
