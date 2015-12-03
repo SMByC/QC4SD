@@ -7,13 +7,15 @@
 
 import os
 import osr
-import numpy as np
+import multiprocessing
+from math import ceil, floor
+
 try:
     from osgeo import gdal
 except ImportError:
     import gdal
 
-from QC4SD.lib import fix_zeros
+from QC4SD.lib import fix_zeros, chunks, merge_dicts
 from QC4SD.satellite_data.satellite_data import SatelliteData
 
 
@@ -50,6 +52,51 @@ class QualityControl:
     def __str__(self):
         return self.band_name
 
+    def do_check_qc_by_chunk(self, x_chunk, sd):
+        """Check the quality control for data band pixel per pixel
+        processing it pixels grouped by chunks of rows in multiprocess
+        """
+        statistics = {'total_invalid_pixels': 0, 'invalid_pixels': {}}
+
+        #pixels_no_pass_qc = np.empty((0, 2), dtype=int)
+        pixels_no_pass_qc = []
+
+        for x in x_chunk:
+            for y, data_band_pixel in enumerate(self.data_band_raster_to_process[x]):
+                #if not (0 < x < 200 and 200 < y < 400):
+                #    continue
+                # if pixel is not valid then don't check it
+                if data_band_pixel == int(self.nodata_value): # or True:
+                    continue
+                # check pixel with all items of all quality control bands configured
+                pixel_check_list = []
+                for qc_id_name, qc_checker in sd.qc_bands.items():
+                    pixel_check_list.append(qc_checker.quality_control_check(x, y, self.band, self.qcf))
+                    statistics['invalid_pixels'][qc_checker.full_name] = qc_checker.invalid_pixels
+
+                # the pixel pass or not pass the quality control:
+                # check if all validate quality control for this pixel are True
+                pixel_pass_quality_control = not (False in pixel_check_list)
+
+                # if the pixel not pass the quality control, replace with NoData value
+                if not pixel_pass_quality_control:
+                    #pixels_no_pass_qc = np.append(pixels_no_pass_qc, [[x, y]], axis=0)
+                    pixels_no_pass_qc.append([x, y])
+                    statistics['total_invalid_pixels'] += 1
+
+        #return data_band_raster_x, sd.statistics
+        return "{0}--{1}".format(x_chunk[0], x_chunk[-1]), statistics, pixels_no_pass_qc
+
+    @staticmethod
+    def calculate(func, args):
+        result, statistics, pixels_no_pass_qc = func(*args)
+        return '{0} says that {1} {2}'.format(
+            multiprocessing.current_process().name,
+            func.__name__, result), statistics, pixels_no_pass_qc
+
+    def meta_calculate(self, args):
+        return self.calculate(*args)
+
     def process(self):
         """Process the quality control, this is check pixel per pixel
         for specific band to process for all input files. Save all
@@ -59,43 +106,54 @@ class QualityControl:
 
         # for each file
         for sd in SatelliteData.list:
-            # some statistics for this satellite data (pixels and quality controls bands)
-            sd_statistics = {'total_pixels': sd.get_total_pixels(), 'total_invalid_pixels': 0, 'invalid_pixels': {}}
+            # statistics for this satellite data (pixels and quality controls bands)
+            sd_statistics = {'total_pixels': sd.total_pixels, 'total_invalid_pixels': 0, 'invalid_pixels': {}}
+            # get NoData value specific for band/product
+            self.nodata_value = sd.get_nodata_value(self.band)
             # get raster for band to process
             # TODO: optimize/performance the table open/access in memory (pytables?)
-            data_band_raster = sd.get_data_band(self.band)
-            # get NoData value specific per band/product
-            nodata_value = sd.get_nodata_value(self.band)
+            self.data_band_raster_to_process = sd.get_data_band(self.band)
 
-            # process each pixel for the band to process
-            for (x, y), data_band_pixel in np.ndenumerate(data_band_raster):
-                #if not (0 < x < 200 and 200 < y < 400):
-                #    continue
-                # if pixel is not valid then don't check it
-                if data_band_pixel == int(nodata_value): # or True:
-                    continue
-                # check pixel with all items of all quality control bands configured
-                pixel_check_list = []
-                for qc_id_name, qc_checker in sd.qc_bands.items():
-                    pixel_check_list.append(qc_checker.quality_control_check(x, y, self.band, self.qcf))
-                    sd_statistics['invalid_pixels'][qc_checker.full_name] = qc_checker.invalid_pixels
+            ################################
+            # start multiprocess
+            multiprocessing.freeze_support()
+            number_of_processes = multiprocessing.cpu_count() - 1
 
-                # the pixel pass or not pass the quality control:
-                # check if all validate quality control for this pixel are True
-                pixel_pass_quality_control = not (False in pixel_check_list)
+            # calculate the number of chunks
+            n_chunks = ceil(sd.rows/(number_of_processes*floor(sd.rows/1000)))
+            #n_chunks = 2
+            # divide the rows in n_chunks to process matrix in multiprocess (multi-rows)
+            x_chunks = chunks(range(sd.rows), n_chunks)
 
-                #if y == 0:
-                #    print(x,y)
+            print('Creating pool with %d processes\n' % number_of_processes)
 
-                # if the pixel not pass the quality control, replace with NoData value
-                if not pixel_pass_quality_control:
-                    data_band_raster[x, y] = nodata_value
-                    sd_statistics['total_invalid_pixels'] += 1
+            with multiprocessing.Pool(number_of_processes) as pool:
+                tasks = [(self.do_check_qc_by_chunk, (x_chunk, sd))
+                         for x_chunk in x_chunks]
 
+                imap_tasks = pool.imap(self.meta_calculate, tasks)
+                #all_pixels_no_pass_qc = np.empty((0, 2), dtype=int)
+                all_pixels_no_pass_qc = []
+                print('Ordered results using pool.imap():')
+                for task, statistics, pixels_no_pass_qc in imap_tasks:
+                    print('\t', task)
+                    sd_statistics = merge_dicts(sd_statistics, statistics)
+                    #all_pixels_no_pass_qc = np.append(all_pixels_no_pass_qc, pixels_no_pass_qc, axis=0)
+                    all_pixels_no_pass_qc += pixels_no_pass_qc
+
+            # save statistics
             self.quality_control_statistics[sd.date_str] = sd_statistics
+
+            # mask all pixels that no pass the quality control
+            data_band_raster = sd.get_data_band(self.band)
+            for x, y in all_pixels_no_pass_qc:
+                data_band_raster[x, y] = self.nodata_value
 
             # save raster band for each input file with QC in sorted list chronologically
             self.output_bands.append(data_band_raster)
+
+            # clean
+            del self.data_band_raster_to_process, sd_statistics, data_band_raster
 
     def save_results(self, output_dir):
         """Save all processed files in one file per each data band to process,
