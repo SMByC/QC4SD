@@ -20,7 +20,4 @@ def setup_quality_control_file(qcf):
     quality_control_file = configparser.RawConfigParser()
     quality_control_file.read(qcf)
 
-    print(quality_control_file)
-    print(quality_control_file.sections())
-
     return quality_control_file

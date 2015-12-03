@@ -16,7 +16,7 @@ automatable across python scripts as a module.
 
 ***
 
-    Copyright © 2015 IDEAM
+    Copyright (c) 2015 IDEAM
     Instituto de Hidrología, Meteorología y Estudios Ambientales
     Sistema de Monitoreo de Bosques y Carbono - SMBYC
     Calle 25 D No. 96 B - 70

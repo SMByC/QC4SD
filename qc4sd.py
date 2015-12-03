@@ -67,7 +67,14 @@ def run(qcf, bands, files, output):
 
     config_run = {'qcf': qcf, 'bands': bands, 'files': files, 'output': output}
 
-    print(config_run)
+    ################################
+    # init message
+
+    print("\nQC4SD - Quality Control Algorithm for Satellite Data")
+    print("\nConfiguration run:")
+    print("\tquality control file: {0}".format(os.path.basename(config_run['qcf'])))
+    print("\timages to process: {0}".format(len(config_run['files'])))
+    print("\tband(s) to process: {0}".format(','.join([str(b) for b in config_run['bands']])))
 
     ################################
     # process
@@ -94,6 +101,12 @@ def run(qcf, bands, files, output):
                 for qc_item, invalid in qc_invalid_pixels.items():
                     if invalid != 0:
                         print('    ', qc_item+':', invalid)
+
+    ################################
+    # end message
+    print("\nCopyright (c) 2015 IDEAM")
+    print("Instituto de Hidrología, Meteorología y Estudios Ambientales")
+    print("Sistema de Monitoreo de Bosques y Carbono - SMBYC")
 
 
 def script():

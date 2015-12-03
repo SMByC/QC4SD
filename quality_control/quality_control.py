@@ -104,7 +104,7 @@ class QualityControl:
 
         number_of_processes = multiprocessing.cpu_count() - 1
         if number_of_processes > 1:
-            print('\nMulti-processing with {0} processes\n'.format(number_of_processes))
+            print('\n(Running with {0} local parallel processing)\n'.format(number_of_processes))
 
         # for each file
         for sd in SatelliteData.list:
@@ -132,7 +132,7 @@ class QualityControl:
                          for x_chunk in x_chunks]
 
                 imap_tasks = pool.imap(self.meta_calculate, tasks)
-                print('Processing the image {0}  in the band {1}:\n\t0%..'.format(sd.file_name, self.band), end="", flush=True)
+                print('Processing the image {0} in the band {1}:\n\t0%..'.format(sd.file_name, self.band), end="", flush=True)
 
                 #all_pixels_no_pass_qc = np.empty((0, 2), dtype=int)
                 all_pixels_no_pass_qc = []
