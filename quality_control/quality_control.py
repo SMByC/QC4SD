@@ -24,7 +24,6 @@ class QualityControl:
     band with the quality control settings based on quality control
     file.
     """
-
     # save all instances
     list = []
 
@@ -63,10 +62,10 @@ class QualityControl:
 
         for x in x_chunk:
             for y, data_band_pixel in enumerate(self.data_band_raster_to_process[x]):
-                #if not (0 < x < 200 and 200 < y < 400):
-                #    continue
+                if not (0 < x < 200 and 200 < y < 400):
+                    continue
                 # if pixel is not valid then don't check it
-                if data_band_pixel == int(self.nodata_value): # or True:
+                if data_band_pixel == int(self.nodata_value):
                     continue
                 # check pixel with all items of all quality control bands configured
                 pixel_check_list = []
@@ -84,7 +83,6 @@ class QualityControl:
                     pixels_no_pass_qc.append([x, y])
                     statistics['total_invalid_pixels'] += 1
 
-        #return data_band_raster_x, sd.statistics
         return int(round((x_chunk[-1]*100)/sd.rows, 0)), statistics, pixels_no_pass_qc
 
     @staticmethod
@@ -101,7 +99,6 @@ class QualityControl:
         raster 2d array checked (QC) sorted chronologically by date
         of input file.
         """
-
         number_of_processes = multiprocessing.cpu_count() - 1
         if number_of_processes > 1:
             print('\n(Running with {0} local parallel processing)\n'.format(number_of_processes))
@@ -125,7 +122,6 @@ class QualityControl:
             #n_chunks = 2
             # divide the rows in n_chunks to process matrix in multiprocess (multi-rows)
             x_chunks = chunks(range(sd.rows), n_chunks)
-
 
             with multiprocessing.Pool(number_of_processes) as pool:
                 tasks = [(self.do_check_qc_by_chunk, (x_chunk, sd))
@@ -165,7 +161,8 @@ class QualityControl:
         :param output_dir: directory to save the output file
         :type output_dir: path
         """
-
+        print("\nSaving the result for the band {0} in: {1}"
+              .format(self.band, self.output_filename))
         # get gdal properties of one of data band
         sd = SatelliteData.list[0]
         data_band_name = [x for x in sd.sub_datasets if 'b'+fix_zeros(self.band, 2) in x[1]][0][0]
