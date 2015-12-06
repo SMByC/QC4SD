@@ -155,8 +155,8 @@ class QualityControl:
             print(' done')
 
     def save_statistics(self, output_dir):
-        """Create the image that show the time series of all invalid pixels
-        of all filters as the result after apply the QC4SD
+        """Save statistics of invalid pixels in a image that show the time series of
+        all invalid pixels of all filters as the result after apply the QC4SD
         """
 
         import matplotlib.pyplot as plt
@@ -240,19 +240,19 @@ class QualityControl:
         import matplotlib as mpl
         import matplotlib.cm as cm
         norm = mpl.colors.Normalize(vmin=0, vmax=len(all_invalid_pixels_T))
-        cmap = cm.nipy_spectral
+        cmap = cm.Set1
         m = cm.ScalarMappable(norm=norm, cmap=cmap)
 
         for idx, line in enumerate(all_invalid_pixels_T):
             if idx == 0:
-                plt.plot(line, color=m.to_rgba(idx), linewidth=3)
+                plt.plot(line, color=m.to_rgba(idx), linewidth=3.4, alpha=1)
                 for x, y in zip(range(len(SatelliteData.list)), line):
                     ax.text(x, y+max_y*0.02, "{0}%".format(round(100*y/SatelliteData.list[idx].total_pixels, 2)),
-                            ha='center', va='bottom', color=m.to_rgba(idx), fontweight='bold', fontsize=12)
+                            ha='center', va='bottom', color=m.to_rgba(idx), fontweight='bold', fontsize=12, alpha=1)
             else:
-                plt.plot(line, color=m.to_rgba(idx), linewidth=3)
+                plt.plot(line, color=m.to_rgba(idx), linewidth=3, alpha=1)
             plt.text(len(SatelliteData.list)-1+0.02, y_pos_label_fixed[idx], all_filter_names[idx],
-                     fontsize=12, weight='bold', color=m.to_rgba(idx))
+                     fontsize=12, weight='bold', color=m.to_rgba(idx), alpha=1)
         plt.xlim(-len(SatelliteData.list)*0.01, len(SatelliteData.list)-1+len(SatelliteData.list)*0.01)
         plt.xticks(range(len(sd_names_sorted)), sd_names_sorted, rotation=90)
         plt.ylim(-max_y*0.01, max_y+max_y*0.07)
