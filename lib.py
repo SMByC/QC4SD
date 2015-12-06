@@ -112,3 +112,18 @@ def merge_dicts(a, b):
     b_no_common = [(k, b[k]) for k in list(b.keys() - (set(a) & set(b)))]
     return Counter(dict(a_no_common + b_no_common + common_items))
 
+
+def frange(start, stop, step):
+    """Same as range but with floating steps support
+
+    :rtype: list
+    """
+    L = []
+    while 1:
+        next = start + len(L) * step
+        if step > 0 and next >= stop:
+            break
+        elif step < 0 and next <= stop:
+            break
+        L.append(next)
+    return L
