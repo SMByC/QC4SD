@@ -149,7 +149,7 @@ def repulsive_items_list(l, repulsive_distance=None, min_distance=None):
     """
     len_list = max(l)-min(l)
     if repulsive_distance is None:
-        repulsive_distance = len_list*0.028
+        repulsive_distance = len_list*0.03
     if min_distance is None:
         min_distance = repulsive_distance
 

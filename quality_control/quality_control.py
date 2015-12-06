@@ -15,7 +15,7 @@ try:
 except ImportError:
     import gdal
 
-from QC4SD.lib import fix_zeros, chunks, merge_dicts
+from QC4SD.lib import fix_zeros, chunks, merge_dicts, repulsive_items_list
 from QC4SD.satellite_data.satellite_data import SatelliteData
 
 
@@ -153,6 +153,131 @@ class QualityControl:
             del self.data_band_raster_to_process, sd_statistics, data_band_raster
 
             print(' done')
+
+    def save_statistics(self, output_dir):
+        """Create the image that show the time series of all invalid pixels
+        of all filters as the result after apply the QC4SD
+        """
+
+        import matplotlib.pyplot as plt
+
+        # path to save statistics
+        path_stats = os.path.join(output_dir, self.output_filename.split('.tif')[0])
+        # if not os.path.isdir(path_stats):
+        #     os.makedirs(path_stats)
+
+        ################################
+        # graph invalid pixels for the time serie
+
+        img_filename = os.path.join(output_dir, self.output_filename.split('.tif')[0]+"_stats.png")
+        print("Saving the image of statistics of invalid pixels in: {0}".format(os.path.basename(img_filename)))
+
+        ################################
+        # prepare data
+        all_filter_names = set()
+        for sd_invalid_pixels in self.quality_control_statistics.values():
+            filters = sd_invalid_pixels['invalid_pixels']
+            # delete elements if the values are empty
+            filters = {k: filters[k] for k in filters if filters[k]}
+            # unpacking the dicts of all filters
+            filters = [x for x in filters.values()]
+            _tmp_dict = {}
+            for filter in filters:
+                _tmp_dict.update(filter)
+            filters = _tmp_dict
+            all_filter_names = all_filter_names | set(filters.keys())
+        all_filter_names = sorted(list(all_filter_names))
+
+        sd_names_sorted = sorted(self.quality_control_statistics.keys())
+        all_invalid_pixels = []
+        for sd_name in sd_names_sorted:
+            filters = self.quality_control_statistics[sd_name]['invalid_pixels']
+            # delete elements if the values are empty
+            filters = {k: filters[k] for k in filters if filters[k]}
+            # unpacking the dicts of all filters
+            filters = [x for x in filters.values()]
+            _tmp_dict = {}
+            for filter in filters:
+                _tmp_dict.update(filter)
+            filters = _tmp_dict
+
+            sd_time_serie = [self.quality_control_statistics[sd_name]['total_invalid_pixels']]
+            for filter_name in all_filter_names:
+                if filter_name in filters:
+                    sd_time_serie.append(filters[filter_name])
+                else:
+                    sd_time_serie.append(float('nan'))
+            all_invalid_pixels.append(sd_time_serie)
+
+        all_filter_names = ['total_invalid_pixels'] + list(all_filter_names)
+        #all_filter_names = [name.replace('_', ' ') for name in all_filter_names]
+
+        ################################
+        # plot
+
+        width = 10+len(sd_names_sorted)*0.5
+        if width > 24: width = 24
+        fig, ax = plt.subplots(1, 1, figsize=(width, 8), facecolor='white')
+        ax.spines['top'].set_visible(False)
+        ax.spines['bottom'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['left'].set_visible(False)
+        ax.get_xaxis().tick_bottom()
+        ax.get_yaxis().tick_left()
+        plt.tick_params(axis='both', which='both', bottom='off', top='off',
+                        labelbottom='on', left='off', right='off', labelleft='on')
+        all_invalid_pixels_T = list(map(list, zip(*all_invalid_pixels)))
+        max_y = max(all_invalid_pixels_T[0])
+
+        # fix position for y label
+        y_pos_label_fixed = all_invalid_pixels[-1]
+        repulsive_distance = None
+        fix_list = True
+        while fix_list:
+            fix_list, repulsive_distance, y_pos_label_fixed = repulsive_items_list(y_pos_label_fixed, repulsive_distance)
+
+        # define colors
+        import matplotlib as mpl
+        import matplotlib.cm as cm
+        norm = mpl.colors.Normalize(vmin=0, vmax=len(all_invalid_pixels_T))
+        cmap = cm.nipy_spectral
+        m = cm.ScalarMappable(norm=norm, cmap=cmap)
+
+        for idx, line in enumerate(all_invalid_pixels_T):
+            if idx == 0:
+                plt.plot(line, color=m.to_rgba(idx), linewidth=3)
+                for x, y in zip(range(len(SatelliteData.list)), line):
+                    ax.text(x, y+max_y*0.02, "{0}%".format(round(100*y/SatelliteData.list[idx].total_pixels, 2)),
+                            ha='center', va='bottom', color=m.to_rgba(idx), fontweight='bold', fontsize=12)
+            else:
+                plt.plot(line, color=m.to_rgba(idx), linewidth=3)
+            plt.text(len(SatelliteData.list)-1+0.02, y_pos_label_fixed[idx], all_filter_names[idx],
+                     fontsize=12, weight='bold', color=m.to_rgba(idx))
+        plt.xlim(-len(SatelliteData.list)*0.01, len(SatelliteData.list)-1+len(SatelliteData.list)*0.01)
+        plt.xticks(range(len(sd_names_sorted)), sd_names_sorted, rotation=90)
+        plt.ylim(-max_y*0.01, max_y+max_y*0.07)
+        plt.title("Invalid pixels for {0} {1} in band {2}\nQC4SD - IDEAM".
+                  format(SatelliteData.tile, SatelliteData.shortname, fix_zeros(self.band, 2)),
+                  fontsize=18, weight='bold', color="#3A3A3A")
+        plt.xlabel("Date", fontsize=14, weight='bold', color="#3A3A3A")
+        plt.ylabel("Number of invalid pixels", fontsize=14, weight='bold', color="#3A3A3A")
+        plt.tick_params(axis='both', which='major', labelsize=14, color="#3A3A3A")
+        ax.grid(True, color='gray')
+        fig.tight_layout()
+        fig.subplots_adjust(right=1.02-3.6/width)
+
+        plt.savefig(img_filename, dpi=86)
+        plt.close('all')
+
+        # for sd_name, sd_invalid_pixels in self.quality_control_statistics.items():
+        #     print()
+        #     print(sd_name)
+        #     print('total_invalid_pixels', sd_invalid_pixels['total_invalid_pixels'])
+        #     for qc_id_name, qc_invalid_pixels in sd_invalid_pixels['invalid_pixels'].items():
+        #         print('  '+qc_id_name)
+        #         for qc_item, invalid in qc_invalid_pixels.items():
+        #             if invalid != 0:
+        #                 print('    ', qc_item+':', invalid)
 
     def save_results(self, output_dir):
         """Save all processed files in one file per each data band to process,

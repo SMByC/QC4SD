@@ -90,17 +90,7 @@ def run(qcf, bands, files, output):
         qc = QualityControl(config_run['quality_control_file'], band)
         qc.process()
         qc.save_results(config_run['output'])
-
-        # print some statistics
-        for sd_name, sd_invalid_pixels in qc.quality_control_statistics.items():
-            print()
-            print(sd_name)
-            print('total_invalid_pixels', sd_invalid_pixels['total_invalid_pixels'])
-            for qc_id_name, qc_invalid_pixels in sd_invalid_pixels['invalid_pixels'].items():
-                print('  '+qc_id_name)
-                for qc_item, invalid in qc_invalid_pixels.items():
-                    if invalid != 0:
-                        print('    ', qc_item+':', invalid)
+        qc.save_statistics(config_run['output'])
 
     ################################
     # end message
