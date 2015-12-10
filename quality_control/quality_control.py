@@ -8,7 +8,8 @@
 import os
 import osr
 import multiprocessing
-from math import ceil, floor
+from copy import deepcopy
+from math import ceil, floor, isnan
 
 try:
     from osgeo import gdal
@@ -230,7 +231,16 @@ class QualityControl:
         max_y = max(all_invalid_pixels_T[0])
 
         # fix position for y label
-        y_pos_label_fixed = all_invalid_pixels[-1]
+        y_pos_label_fixed = deepcopy(all_invalid_pixels[-1])
+        # if any item in the last position is nan, put the last
+        # valid value for this item
+        for idx, y_pos in enumerate(y_pos_label_fixed):
+            iter_pos = -1
+            if isnan(y_pos):
+                while isnan(all_invalid_pixels[iter_pos][idx]):
+                    iter_pos += -1
+                y_pos_label_fixed[idx] = all_invalid_pixels[iter_pos][idx]
+
         repulsive_distance = None
         fix_list = True
         while fix_list:
