@@ -63,8 +63,8 @@ class QualityControl:
 
         for x in x_chunk:
             for y, data_band_pixel in enumerate(self.data_band_raster_to_process[x]):
-                if not (0 < x < 200 and 200 < y < 400):
-                    continue
+                #if not (0 < x < 200 and 200 < y < 400):
+                #    continue
                 # if pixel is not valid then don't check it
                 if data_band_pixel == int(self.nodata_value):
                     continue
