@@ -218,6 +218,7 @@ class QualityControl:
 
         width = 10+len(sd_names_sorted)*0.5
         if width > 24: width = 24
+        if len(sd_names_sorted) == 1: width = 7
         fig, ax = plt.subplots(1, 1, figsize=(width, 8), facecolor='white')
         ax.spines['top'].set_visible(False)
         ax.spines['bottom'].set_visible(False)
@@ -253,28 +254,52 @@ class QualityControl:
         cmap = cm.Set1
         m = cm.ScalarMappable(norm=norm, cmap=cmap)
 
-        for idx, line in enumerate(all_invalid_pixels_T):
-            if idx == 0:
-                plt.plot(line, color=m.to_rgba(idx), linewidth=3.4, alpha=1)
-                for x, y in zip(range(len(SatelliteData.list)), line):
-                    ax.text(x, y+max_y*0.02, "{0}%".format(round(100*y/SatelliteData.list[idx].total_pixels, 2)),
-                            ha='center', va='bottom', color=m.to_rgba(idx), fontweight='bold', fontsize=12, alpha=1)
-            else:
-                plt.plot(line, color=m.to_rgba(idx), linewidth=3, alpha=1)
-            plt.text(len(SatelliteData.list)-1+0.02, y_pos_label_fixed[idx], all_filter_names[idx],
-                     fontsize=12, weight='bold', color=m.to_rgba(idx), alpha=1)
-        plt.xlim(-len(SatelliteData.list)*0.01, len(SatelliteData.list)-1+len(SatelliteData.list)*0.01)
-        plt.xticks(range(len(sd_names_sorted)), sd_names_sorted, rotation=90)
-        plt.ylim(-max_y*0.01, max_y+max_y*0.07)
-        plt.title("Invalid pixels for {0} {1} in band {2}\nQC4SD - IDEAM".
-                  format(SatelliteData.tile, SatelliteData.shortname, fix_zeros(self.band, 2)),
-                  fontsize=18, weight='bold', color="#3A3A3A")
-        plt.xlabel("Date", fontsize=14, weight='bold', color="#3A3A3A")
-        plt.ylabel("Number of invalid pixels", fontsize=14, weight='bold', color="#3A3A3A")
-        plt.tick_params(axis='both', which='major', labelsize=14, color="#3A3A3A")
-        ax.grid(True, color='gray')
-        fig.tight_layout()
-        fig.subplots_adjust(right=1.02-3.6/width)
+        if len(sd_names_sorted) == 1:  # for only one image
+            for idx, line in enumerate(all_invalid_pixels_T):
+                if idx == 0:
+                    plt.plot(0, line, 'ro', markersize=9, color=m.to_rgba(idx), linewidth=3.4, alpha=1)
+                    for x, y in zip(range(len(SatelliteData.list)), line):
+                        ax.text(x, y+max_y*0.02, "{0}%".format(round(100*y/SatelliteData.list[idx].total_pixels, 2)),
+                                ha='center', va='bottom', color=m.to_rgba(idx), fontweight='bold', fontsize=12, alpha=1)
+                else:
+                    plt.plot(0, line, 'ro', markersize=9, color=m.to_rgba(idx), linewidth=3, alpha=1)
+                plt.text(0.3, y_pos_label_fixed[idx], all_filter_names[idx],
+                         fontsize=12, weight='bold', color=m.to_rgba(idx), alpha=1)
+            plt.xlim(-0.5, 0.5)
+            plt.xticks(range(len(sd_names_sorted)), sd_names_sorted, rotation=90)
+            plt.ylim(-max_y*0.01, max_y+max_y*0.07)
+            plt.title("Invalid pixels for {0} {1} in band {2}\nQC4SD - IDEAM".
+                      format(SatelliteData.tile, SatelliteData.shortname, fix_zeros(self.band, 2)),
+                      fontsize=18, weight='bold', color="#3A3A3A")
+            plt.xlabel("Date", fontsize=14, weight='bold', color="#3A3A3A")
+            plt.ylabel("Number of invalid pixels", fontsize=14, weight='bold', color="#3A3A3A")
+            plt.tick_params(axis='both', which='major', labelsize=14, color="#3A3A3A")
+            ax.grid(True, color='gray')
+            fig.tight_layout()
+            fig.subplots_adjust(right=0.6, left=0.4)
+        else:
+            for idx, line in enumerate(all_invalid_pixels_T):
+                if idx == 0:
+                    plt.plot(line, color=m.to_rgba(idx), linewidth=3.4, alpha=1)
+                    for x, y in zip(range(len(SatelliteData.list)), line):
+                        ax.text(x, y+max_y*0.02, "{0}%".format(round(100*y/SatelliteData.list[idx].total_pixels, 2)),
+                                ha='center', va='bottom', color=m.to_rgba(idx), fontweight='bold', fontsize=12, alpha=1)
+                else:
+                    plt.plot(line, color=m.to_rgba(idx), linewidth=3, alpha=1)
+                plt.text(len(SatelliteData.list)-1+0.02, y_pos_label_fixed[idx], all_filter_names[idx],
+                         fontsize=12, weight='bold', color=m.to_rgba(idx), alpha=1)
+            plt.xlim(-len(SatelliteData.list)*0.01, len(SatelliteData.list)-1+len(SatelliteData.list)*0.01)
+            plt.xticks(range(len(sd_names_sorted)), sd_names_sorted, rotation=90)
+            plt.ylim(-max_y*0.01, max_y+max_y*0.07)
+            plt.title("Invalid pixels for {0} {1} in band {2}\nQC4SD - IDEAM".
+                      format(SatelliteData.tile, SatelliteData.shortname, fix_zeros(self.band, 2)),
+                      fontsize=18, weight='bold', color="#3A3A3A")
+            plt.xlabel("Date", fontsize=14, weight='bold', color="#3A3A3A")
+            plt.ylabel("Number of invalid pixels", fontsize=14, weight='bold', color="#3A3A3A")
+            plt.tick_params(axis='both', which='major', labelsize=14, color="#3A3A3A")
+            ax.grid(True, color='gray')
+            fig.tight_layout()
+            fig.subplots_adjust(right=1.02-3.6/width)
 
         plt.savefig(img_filename, dpi=86)
         plt.close('all')
