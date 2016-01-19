@@ -97,6 +97,9 @@ def run(qcf, bands, files, output):
         qc.save_results(config_run['output'])
         qc.save_statistics(config_run['output'])
 
+    # Cleanup
+    SatelliteData.list = []
+    QualityControl.list = []
 
 def script():
     """Execute only if run as a script.
