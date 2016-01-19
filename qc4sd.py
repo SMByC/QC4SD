@@ -97,12 +97,6 @@ def run(qcf, bands, files, output):
         qc.save_results(config_run['output'])
         qc.save_statistics(config_run['output'])
 
-    ################################
-    # end message
-    print("\nCopyright (c) 2015 IDEAM")
-    print("Instituto de Hidrología, Meteorología y Estudios Ambientales")
-    print("Sistema de Monitoreo de Bosques y Carbono - SMBYC")
-
 
 def script():
     """Execute only if run as a script.
@@ -131,6 +125,12 @@ def script():
                          " band (int) or bands comma separated without space.")
 
     run(args.qcf, args.bands, args.files, args.output)
+
+    ################################
+    # end message
+    print("\nCopyright (c) 2015 SMBYC-IDEAM")
+    print("Instituto de Hidrología, Meteorología y Estudios Ambientales")
+    print("Sistema de Monitoreo de Bosques y Carbono - SMBYC")
 
 
 if __name__ == '__main__':
