@@ -51,6 +51,11 @@ def run(qcf, bands, files, output):
                                 " quality control configuration.")
     if qcf == 'default':
         qcf = DEFAULT_QCF
+
+    # if pass one band as integer, like 1 not as list
+    if isinstance(bands, int):
+        bands = [bands]
+
     # bands
     try:
         bands = [int(b) for b in bands]
