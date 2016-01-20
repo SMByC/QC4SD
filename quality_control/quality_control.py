@@ -159,6 +159,9 @@ class QualityControl:
         """Save statistics of invalid pixels in a image that show the time series of
         all invalid pixels of all filters as the result after apply the QC4SD
         """
+        # force matplotlib to not use any Xwindows backend.
+        import matplotlib
+        matplotlib.use('Agg')
 
         import matplotlib.pyplot as plt
 
