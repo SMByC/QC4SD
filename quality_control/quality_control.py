@@ -7,6 +7,7 @@
 
 import os
 import osr
+import resource
 import multiprocessing
 from copy import deepcopy
 from math import ceil, floor, isnan
@@ -100,6 +101,11 @@ class QualityControl:
         raster 2d array checked (QC) sorted chronologically by date
         of input file.
         """
+        # set unlimited to soft/hard memory for subprocess
+        resource.setrlimit(resource.RLIMIT_STACK, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+        resource.setrlimit(resource.RLIMIT_AS, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+        resource.setrlimit(resource.RLIMIT_DATA, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
+
         number_of_processes = multiprocessing.cpu_count() - 1
         if number_of_processes > 1:
             print('\n(Running with {0} local parallel processing)\n'.format(number_of_processes))
