@@ -84,7 +84,7 @@ class QualityControl:
                     pixels_no_pass_qc.append([x, y])
                     statistics['total_invalid_pixels'] += 1
 
-        return int(round((x_chunk[-1]*100)/sd.rows, 0)), statistics, pixels_no_pass_qc
+        return int(round((x_chunk[-1]*100)/sd.get_rows(self.band), 0)), statistics, pixels_no_pass_qc
 
     @staticmethod
     def calculate(func, args):
@@ -107,7 +107,7 @@ class QualityControl:
         # for each file
         for sd in SatelliteData.list:
             # statistics for this satellite data (pixels and quality controls bands)
-            sd_statistics = {'total_pixels': sd.total_pixels, 'total_invalid_pixels': 0, 'invalid_pixels': {}}
+            sd_statistics = {'total_pixels': sd.get_total_pixels(self.band), 'total_invalid_pixels': 0, 'invalid_pixels': {}}
             # get NoData value specific for band/product
             self.nodata_value = sd.get_nodata_value(self.band)
             # get raster for band to process
@@ -119,10 +119,11 @@ class QualityControl:
             multiprocessing.freeze_support()
 
             # calculate the number of chunks
-            n_chunks = ceil(sd.rows/(number_of_processes*floor(sd.rows/1000)))
+            n_chunks = ceil(sd.get_rows(self.band)/(number_of_processes*floor(sd.get_rows(self.band)/1000)))
+
             #n_chunks = 2
             # divide the rows in n_chunks to process matrix in multiprocess (multi-rows)
-            x_chunks = chunks(range(sd.rows), n_chunks)
+            x_chunks = chunks(range(sd.get_rows(self.band)), n_chunks)
 
             with multiprocessing.Pool(number_of_processes) as pool:
                 tasks = [(self.do_check_qc_by_chunk, (x_chunk, sd))
@@ -262,7 +263,7 @@ class QualityControl:
                 if idx == 0:
                     plt.plot(0, line, 'ro', markersize=9, color=m.to_rgba(idx), linewidth=3.4, alpha=1)
                     for x, y in zip(range(len(SatelliteData.list)), line):
-                        ax.text(x, y+max_y*0.02, "{0}%".format(round(100*y/SatelliteData.list[idx].total_pixels, 2)),
+                        ax.text(x, y+max_y*0.02, "{0}%".format(round(100*y/SatelliteData.list[idx].get_total_pixels(self.band), 2)),
                                 ha='center', va='bottom', color=m.to_rgba(idx), fontweight='bold', fontsize=12, alpha=1)
                 else:
                     plt.plot(0, line, 'ro', markersize=9, color=m.to_rgba(idx), linewidth=3, alpha=1)
@@ -285,7 +286,7 @@ class QualityControl:
                 if idx == 0:
                     plt.plot(line, color=m.to_rgba(idx), linewidth=3.4, alpha=1)
                     for x, y in zip(range(len(SatelliteData.list)), line):
-                        ax.text(x, y+max_y*0.02, "{0}%".format(round(100*y/SatelliteData.list[idx].total_pixels, 2)),
+                        ax.text(x, y+max_y*0.02, "{0}%".format(round(100*y/SatelliteData.list[idx].get_total_pixels(self.band), 2)),
                                 ha='center', va='bottom', color=m.to_rgba(idx), fontweight='bold', fontsize=12, alpha=1)
                 else:
                     plt.plot(line, color=m.to_rgba(idx), linewidth=3, alpha=1)
@@ -335,13 +336,12 @@ class QualityControl:
         originY = geotransform[3]
         pixelWidth = geotransform[1]
         pixelHeight = geotransform[5]
-        cols = gdal_data_band.RasterXSize
-        rows = gdal_data_band.RasterYSize
 
         # settings projection and output raster
         driver = gdal.GetDriverByName('GTiff')
         nbands = len(self.output_bands)
-        outRaster = driver.Create(os.path.join(output_dir, self.output_filename), cols, rows, nbands, gdal.GDT_Int16)
+        outRaster = driver.Create(os.path.join(output_dir, self.output_filename), sd.get_cols(self.band),
+                                  sd.get_rows(self.band), nbands, gdal.GDT_Int16)
         outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
         outRasterSRS = osr.SpatialReference()
         outRasterSRS.ImportFromWkt(gdal_data_band.GetProjectionRef())

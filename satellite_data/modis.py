@@ -39,10 +39,6 @@ class MODIS(SatelliteData):
         self.date_str = "{0}-{1}-{2}".format(self.datetime.year,
                                              fix_zeros(self.datetime.month, 2),
                                              fix_zeros(self.datetime.day, 2))
-        # load columns and rows
-        self.cols = int(self.get_metadata("DATACOLUMNS500M"))
-        self.rows = int(self.get_metadata("DATAROWS500M"))
-        self.total_pixels = self.rows*self.cols
 
         # save in globals vars of class
         SatelliteData.satellite = self.satellite
@@ -103,6 +99,21 @@ class MODIS(SatelliteData):
         data_band_raster = gdal_data_band.ReadAsArray()
         del gdal_data_band
         return data_band_raster
+
+    def get_cols(self, band):
+        data_band_name = [x for x in self.sub_datasets if 'b'+fix_zeros(band, 2) in x[1]][0][0]
+        gdal_data_band = gdal.Open(data_band_name)
+        return gdal_data_band.RasterXSize
+
+    def get_rows(self, band):
+        data_band_name = [x for x in self.sub_datasets if 'b'+fix_zeros(band, 2) in x[1]][0][0]
+        gdal_data_band = gdal.Open(data_band_name)
+        return gdal_data_band.RasterYSize
+
+    def get_total_pixels(self, band):
+        data_band_name = [x for x in self.sub_datasets if 'b'+fix_zeros(band, 2) in x[1]][0][0]
+        gdal_data_band = gdal.Open(data_band_name)
+        return gdal_data_band.RasterXSize*gdal_data_band.RasterYSize
 
     def get_nodata_value(self, band):
         data_band_name = [x for x in self.sub_datasets if 'b'+fix_zeros(band, 2) in x[1]][0][0]
