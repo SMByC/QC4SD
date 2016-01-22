@@ -80,7 +80,7 @@ class MODIS(SatelliteData):
         if self.shortname in ['MOD09Q1', 'MYD09Q1']:
             # Reflectance band quality
             qc_name = [x for x in self.sub_datasets if '_qc_' in x[1]][0][0]
-            self.qc_bands['rbq'] = ModisQC(self.shortname, 'rbq', qc_name)
+            self.qc_bands['rbq'] = ModisQC(self.shortname, 'rbq', qc_name, num_bits=16)
 
     def get_data_band(self, band):
         """Return the raster of the data band for respective band
