@@ -131,7 +131,7 @@ class QualityControl:
             # divide the rows in n_chunks to process matrix in multiprocess (multi-rows)
             x_chunks = chunks(range(sd.get_rows(self.band)), n_chunks)
 
-            with multiprocessing.Pool(number_of_processes) as pool:
+            with multiprocessing.Pool(processes=number_of_processes) as pool:
                 tasks = [(self.do_check_qc_by_chunk, (x_chunk, sd))
                          for x_chunk in x_chunks]
 
@@ -145,6 +145,8 @@ class QualityControl:
                     sd_statistics = merge_dicts(sd_statistics, statistics)
                     #all_pixels_no_pass_qc = np.append(all_pixels_no_pass_qc, pixels_no_pass_qc, axis=0)
                     all_pixels_no_pass_qc += pixels_no_pass_qc
+
+                pool.terminate()
 
             # save statistics
             self.quality_control_statistics[sd.date_str] = sd_statistics

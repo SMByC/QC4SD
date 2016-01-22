@@ -15,6 +15,7 @@
 
 import os
 import argparse
+import gc
 
 from QC4SD.quality_control.quality_control import QualityControl
 from QC4SD.quality_control.quality_control_file import setup_quality_control_file
@@ -98,8 +99,12 @@ def run(qcf, bands, files, output):
         qc.save_statistics(config_run['output'])
 
     # Cleanup
+    del config_run, files, qc
     SatelliteData.list = []
     QualityControl.list = []
+    # force run garbage collector memory
+    gc.collect()
+
 
 def script():
     """Execute only if run as a script.
