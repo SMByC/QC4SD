@@ -321,8 +321,8 @@ class ModisQC:
                     pixel_pass_quality_control = False
                 ### Cloud State
                 bits = qc_bin_str[2:4]
-                if qcf.getboolean('MXD09Q1', 'sf_cloud_state_'+bits) is False:
-                    self.invalid_pixels['sf_cloud_state_'+bits] += 1
+                if qcf.getboolean('MXD09Q1', 'rbq_cloud_state_'+bits) is False:
+                    self.invalid_pixels['rbq_cloud_state_'+bits] += 1
                     pixel_pass_quality_control = False
                 ### Data Quality
                 bits = qc_bin_str[(band-1)*4+4:band*4+4]
