@@ -6,6 +6,7 @@
 #  Email: xcorredorl at ideam.gov.co
 
 import os
+import gc
 import osr
 import resource
 import multiprocessing
@@ -160,7 +161,9 @@ class QualityControl:
             self.output_bands.append(data_band_raster)
 
             # clean
-            del self.data_band_raster_to_process, sd_statistics, data_band_raster
+            del self.data_band_raster_to_process, sd_statistics, data_band_raster, pool, n_chunks, x_chunks
+            # force run garbage collector memory
+            gc.collect()
 
             print(' done')
 
