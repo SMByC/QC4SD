@@ -35,7 +35,7 @@ class ModisQC:
         self.need_check = True
 
         # [MXD09A1] ########################################################
-        # for MOD09A1 and MYD09A1
+        # for MOD09A1 and MYD09A1 (Collection 6)
         if self.sd_shortname in ['MOD09A1', 'MYD09A1']:
 
             # set the full name for this quality control band
@@ -43,13 +43,14 @@ class ModisQC:
             if self.id_name == 'sza': self.full_name = 'Solar Zenith Angle'
             if self.id_name == 'vza': self.full_name = 'View Zenith Angle'
             if self.id_name == 'rza': self.full_name = 'Relative Zenith Angle'
-            if self.id_name == 'sf':  self.full_name = 'State flags'
+            if self.id_name == 'sf':  self.full_name = 'Reflectance State QA flags'
 
         # [MXD09Q1] ########################################################
-        # for MOD09Q1 and MYD09Q1
+        # for MOD09Q1 and MYD09Q1 (Collection 6)
         if self.sd_shortname in ['MOD09Q1', 'MYD09Q1']:
 
             # set the full name for this quality control band
+            if self.id_name == 'sf':  self.full_name = 'Reflectance State QA flags'
             if self.id_name == 'rbq': self.full_name = 'Reflectance Band Quality'
 
     def init_statistics(self, qcf):
@@ -123,7 +124,7 @@ class ModisQC:
         qc_pixel_value = self.quality_control_raster.item((x, y))
 
         # [MXD09A1] ########################################################
-        # for MOD09A1 and MYD09A1
+        # for MOD09A1 and MYD09A1 (Collection 6)
         if self.sd_shortname in ['MOD09A1', 'MYD09A1']:
 
             # TODO: need work for increase the performance, check qcf if is false before
@@ -210,7 +211,7 @@ class ModisQC:
 
                 return pixel_pass_quality_control
 
-            #### State flags Band (sf) ####
+            #### Reflectance State QA Flags Band (sf) ####
             def sf(qc_pixel_value):
                 pixel_pass_quality_control = True
                 # prepare data
@@ -306,8 +307,92 @@ class ModisQC:
             return quality_control_band[self.id_name](qc_pixel_value)
 
         # [MXD09Q1] ########################################################
-        # for MOD09Q1 and MYD09Q1
+        # for MOD09Q1 and MYD09Q1 (Collection 6)
         if self.sd_shortname in ['MOD09Q1', 'MYD09Q1']:
+
+            #### Reflectance State QA Flags Band (sf) ####
+            def sf(qc_pixel_value):
+                pixel_pass_quality_control = True
+                # prepare data
+                qc_bin_str = fix_binary_string(int2bin(qc_pixel_value), self.num_bits)
+                ### Cloud State
+                bits = qc_bin_str[0:2]
+                if qcf.getboolean('MXD09Q1', 'sf_cloud_state_'+bits) is False:
+                    self.invalid_pixels['sf_cloud_state_'+bits] += 1
+                    pixel_pass_quality_control = False
+                ### Cloud shadow
+                qc_pixel_value = qc_bin_str[2]
+                if (qcf.getboolean('MXD09Q1', 'sf_cloud_shadow_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['sf_cloud_shadow_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09Q1', 'sf_cloud_shadow_1'):
+                    self.invalid_pixels['sf_cloud_shadow_1'] += 1
+                    pixel_pass_quality_control = False
+                ### Land/Water flag
+                bits = qc_bin_str[3:6]
+                if qcf.getboolean('MXD09Q1', 'sf_land_water_'+bits) is False:
+                    self.invalid_pixels['sf_land_water_'+bits] += 1
+                    pixel_pass_quality_control = False
+                ### Aerosol Quantity
+                bits = qc_bin_str[6:8]
+                if qcf.getboolean('MXD09Q1', 'sf_aerosol_quantity_'+bits) is False:
+                    self.invalid_pixels['sf_aerosol_quantity_'+bits] += 1
+                    pixel_pass_quality_control = False
+                ### cirrus_detected
+                bits = qc_bin_str[8:10]
+                if qcf.getboolean('MXD09Q1', 'sf_cirrus_detected_'+bits) is False:
+                    self.invalid_pixels['sf_cirrus_detected_'+bits] += 1
+                    pixel_pass_quality_control = False
+                ### Internal Cloud Algorithm Flag
+                qc_pixel_value = qc_bin_str[10]
+                if (qcf.getboolean('MXD09Q1', 'sf_internal_cloud_algorithm_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['sf_internal_cloud_algorithm_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09Q1', 'sf_internal_cloud_algorithm_1'):
+                    self.invalid_pixels['sf_internal_cloud_algorithm_1'] += 1
+                    pixel_pass_quality_control = False
+                ### Internal Fire Algorithm Flag
+                qc_pixel_value = qc_bin_str[11]
+                if (qcf.getboolean('MXD09Q1', 'sf_internal_fire_algorithm_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['sf_internal_fire_algorithm_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09Q1', 'sf_internal_fire_algorithm_1'):
+                    self.invalid_pixels['sf_internal_fire_algorithm_1'] += 1
+                    pixel_pass_quality_control = False
+                ### MOD35 snow/ice flag
+                qc_pixel_value = qc_bin_str[12]
+                if (qcf.getboolean('MXD09Q1', 'sf_mod35_snow_ice_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['sf_mod35_snow_ice_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09Q1', 'sf_mod35_snow_ice_1'):
+                    self.invalid_pixels['sf_mod35_snow_ice_1'] += 1
+                    pixel_pass_quality_control = False
+                ### Pixel adjacent to cloud
+                qc_pixel_value = qc_bin_str[13]
+                if (qcf.getboolean('MXD09Q1', 'sf_pixel_adjacent_to_cloud_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['sf_pixel_adjacent_to_cloud_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09Q1', 'sf_pixel_adjacent_to_cloud_1'):
+                    self.invalid_pixels['sf_pixel_adjacent_to_cloud_1'] += 1
+                    pixel_pass_quality_control = False
+                ### Salt pan
+                qc_pixel_value = qc_bin_str[14]
+                if (qcf.getboolean('MXD09Q1', 'sf_salt_pan_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['sf_salt_pan_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09Q1', 'sf_salt_pan_1'):
+                    self.invalid_pixels['sf_salt_pan_1'] += 1
+                    pixel_pass_quality_control = False
+                ### Internal Snow Mask
+                qc_pixel_value = qc_bin_str[15]
+                if (qcf.getboolean('MXD09Q1', 'sf_internal_snow_mask_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['sf_internal_snow_mask_0'] += 1
+                    pixel_pass_quality_control = False
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09Q1', 'sf_internal_snow_mask_1'):
+                    self.invalid_pixels['sf_internal_snow_mask_1'] += 1
+                    pixel_pass_quality_control = False
+
+                return pixel_pass_quality_control
 
             #### Reflectance Band Quality (rbq) ####
             def rbq(qc_pixel_value):
@@ -318,11 +403,6 @@ class ModisQC:
                 bits = qc_bin_str[0:2]
                 if qcf.getboolean('MXD09Q1', 'rbq_modland_qa_'+bits) is False:
                     self.invalid_pixels['rbq_modland_qa_'+bits] += 1
-                    pixel_pass_quality_control = False
-                ### Cloud State
-                bits = qc_bin_str[2:4]
-                if qcf.getboolean('MXD09Q1', 'rbq_cloud_state_'+bits) is False:
-                    self.invalid_pixels['rbq_cloud_state_'+bits] += 1
                     pixel_pass_quality_control = False
                 ### Data Quality
                 bits = qc_bin_str[(band-1)*4+4:band*4+4]
@@ -358,6 +438,7 @@ class ModisQC:
 
             # switch case for quality control band
             quality_control_band = {
+                'sf': sf,
                 'rbq': rbq,
             }
 

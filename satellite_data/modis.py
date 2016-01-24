@@ -56,7 +56,7 @@ class MODIS(SatelliteData):
 
         self.qc_bands = {}
 
-        # for MOD09/MYD09 A1
+        # for MOD09/MYD09 A1 (Collection 6)
         if self.shortname in ['MOD09A1', 'MYD09A1']:
             # define numbers of bits for the band value in binary
 
@@ -72,12 +72,15 @@ class MODIS(SatelliteData):
             # Relative Zenith Angle
             qc_name = [x for x in self.sub_datasets if 'raz' in x[1]][0][0]
             self.qc_bands['rza'] = ModisQC(self.shortname, 'rza', qc_name)
-            # State flags
+            # Reflectance State QA flags
             qc_name = [x for x in self.sub_datasets if '_state_' in x[1]][0][0]
             self.qc_bands['sf'] = ModisQC(self.shortname, 'sf', qc_name, num_bits=16)
 
-        # for MOD09/MYD09 Q1
+        # for MOD09/MYD09 Q1 (Collection 6)
         if self.shortname in ['MOD09Q1', 'MYD09Q1']:
+            # Reflectance State QA flags
+            qc_name = [x for x in self.sub_datasets if '_state_' in x[1]][0][0]
+            self.qc_bands['sf'] = ModisQC(self.shortname, 'sf', qc_name, num_bits=16)
             # Reflectance band quality
             qc_name = [x for x in self.sub_datasets if '_qc_' in x[1]][0][0]
             self.qc_bands['rbq'] = ModisQC(self.shortname, 'rbq', qc_name, num_bits=16)
