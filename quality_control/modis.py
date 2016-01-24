@@ -275,13 +275,13 @@ class ModisQC:
                 if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_pixel_adjacent_to_cloud_1'):
                     self.invalid_pixels['sf_pixel_adjacent_to_cloud_1'] += 1
                     pixel_pass_quality_control = False
-                ### BRDF correction performed
+                ### Salt pan
                 qc_pixel_value = qc_bin_str[14]
-                if (qcf.getboolean('MXD09A1', 'sf_brdf_correction_performed_0') or bool(int(qc_pixel_value))) is False:
-                    self.invalid_pixels['sf_brdf_correction_performed_0'] += 1
+                if (qcf.getboolean('MXD09A1', 'sf_salt_pan_0') or bool(int(qc_pixel_value))) is False:
+                    self.invalid_pixels['sf_salt_pan_0'] += 1
                     pixel_pass_quality_control = False
-                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_brdf_correction_performed_1'):
-                    self.invalid_pixels['sf_brdf_correction_performed_1'] += 1
+                if bool(int(qc_pixel_value)) and not qcf.getboolean('MXD09A1', 'sf_salt_pan_1'):
+                    self.invalid_pixels['sf_salt_pan_1'] += 1
                     pixel_pass_quality_control = False
                 ### Internal Snow Mask
                 qc_pixel_value = qc_bin_str[15]
