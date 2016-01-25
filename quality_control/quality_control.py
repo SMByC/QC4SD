@@ -150,7 +150,7 @@ class QualityControl:
                 pool.terminate()
 
             # save statistics
-            self.quality_control_statistics[sd.date_str] = sd_statistics
+            self.quality_control_statistics[sd.start_year_and_jday] = sd_statistics
 
             # mask all pixels that no pass the quality control
             data_band_raster = sd.get_data_band(self.band)
@@ -183,7 +183,7 @@ class QualityControl:
         #     os.makedirs(path_stats)
 
         ################################
-        # graph invalid pixels for the time serie
+        # graph invalid pixels for the time series
 
         img_filename = os.path.join(output_dir, self.output_filename.split('.tif')[0]+"_stats.png")
         print("Saving the image of statistics of invalid pixels in: {0}".format(os.path.basename(img_filename)))
@@ -217,13 +217,13 @@ class QualityControl:
                 _tmp_dict.update(filter)
             filters = _tmp_dict
 
-            sd_time_serie = [self.quality_control_statistics[sd_name]['total_invalid_pixels']]
+            sd_time_series = [self.quality_control_statistics[sd_name]['total_invalid_pixels']]
             for filter_name in all_filter_names:
                 if filter_name in filters:
-                    sd_time_serie.append(filters[filter_name])
+                    sd_time_series.append(filters[filter_name])
                 else:
-                    sd_time_serie.append(float('nan'))
-            all_invalid_pixels.append(sd_time_serie)
+                    sd_time_series.append(float('nan'))
+            all_invalid_pixels.append(sd_time_series)
 
         all_filter_names = ['total_invalid_pixels'] + list(all_filter_names)
         #all_filter_names = [name.replace('_', ' ') for name in all_filter_names]

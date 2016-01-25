@@ -5,7 +5,7 @@
 #  Authors: Xavier Corredor Llano
 #  Email: xcorredorl at ideam.gov.co
 
-from datetime import datetime
+from datetime import date
 try:
     from osgeo import gdal
 except ImportError:
@@ -33,12 +33,13 @@ class MODIS(SatelliteData):
         self.shortname = self.get_metadata('SHORTNAME')  # MOD09A1
         self.tile = self.get_metadata('LOCALGRANULEID').split('.')[2]  # h10v07
         self.longname = self.get_metadata('LONGNAME')  # MODIS/Terra Surface Reflectance 8-Day L3 Global 500m SIN Grid
-        dt_d = [int(x) for x in self.get_metadata('PRODUCTIONDATETIME').split('T')[0].split('-')]
-        dt_h = [int(x) for x in self.get_metadata('PRODUCTIONDATETIME').replace('.', ':').split('T')[1].split(':')[0:3]]
-        self.datetime = datetime(dt_d[0], dt_d[1], dt_d[2], dt_h[0], dt_h[1], dt_h[2])
-        self.date_str = "{0}-{1}-{2}".format(self.datetime.year,
-                                             fix_zeros(self.datetime.month, 2),
-                                             fix_zeros(self.datetime.day, 2))
+        # get the beginning date
+        dt_d = [int(x) for x in self.get_metadata('RANGEBEGINNINGDATE').split('-')]
+        self.start_date = date(dt_d[0], dt_d[1], dt_d[2])
+        # calculate Julian date of the beginning date
+        self.start_jday = self.start_date.timetuple().tm_yday
+        # year and jday (ie 2015034), equal to filename string
+        self.start_year_and_jday = "{0}{1}".format(self.start_date.year, fix_zeros(self.start_jday, 3))
 
         # save in globals vars of class
         SatelliteData.satellite = self.satellite
