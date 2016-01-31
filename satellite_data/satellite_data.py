@@ -6,6 +6,7 @@
 #  Email: xcorredorl at ideam.gov.co
 
 import os
+import xml.etree.ElementTree as ET
 try:
     from osgeo import gdal
 except ImportError:
@@ -33,33 +34,31 @@ class SatelliteData:
         self.file_name = os.path.basename(file)
 
         gdal_dataset = gdal.Open(file)
-        self.metadata = gdal_dataset.GetMetadata()
         self.sub_datasets = gdal_dataset.GetSubDatasets()
         del gdal_dataset
 
     def __str__(self):
         return self.file_name
 
-    def get_metadata(self, variable_name):
-        return [v for k,v in self.metadata.items() if k.startswith(variable_name)][0]
 
-
-def new(file):
+def new(file, xml_file):
     """Create new instance of child of SatelliteData class
     (MODIS, LandsatFile, ...) base on metadata of input
     file.
 
+    :param xml_file: input xml file
+    :type xml_file: str
     :param file: input file
     :type file: str
     """
 
-    gdal_dataset = gdal.Open(file)
-    satellite_instrument = [v for k,v in gdal_dataset.GetMetadata().items() if k.startswith("ASSOCIATEDINSTRUMENTSHORTNAME")][0]
+    tree = ET.parse(xml_file)
+    satellite_instrument = list(tree.iter('SensorShortName'))[0].text
+    del tree
 
     if satellite_instrument == 'MODIS':
         from QC4SD.satellite_data.modis import MODIS
-        MODIS(file)
-        del gdal_dataset
+        MODIS(file, xml_file)
     elif satellite_instrument == 'LANDSAT':
         pass
     else:
@@ -76,8 +75,8 @@ def load_satellite_data(config_run):
 
     # create new instances of satellite data
 
-    for file in config_run['files']:
-        new(file)
+    for file, xml_file in zip(config_run['files'], config_run['xml_files']):
+        new(file, xml_file)
 
     def check():
         # check all files are the same platform (and satellite),

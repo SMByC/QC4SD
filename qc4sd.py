@@ -67,11 +67,16 @@ def run(qcf, bands, files, output):
     for file in files:
         if not os.path.isfile(file):
             raise FileNotFoundError("The file {0} not exist.".format(file))
+    # xml files
+    xml_files = [file + ".xml" for file in files]
+    for xml_file in xml_files:
+        if not os.path.isfile(xml_file):
+            raise FileNotFoundError("The xml file {0} not exist.".format(xml_file))
     # output
     if not os.path.isdir(output):
         raise NotADirectoryError("The output directory {0} not exist.".format(output))
 
-    config_run = {'qcf': qcf, 'bands': bands, 'files': files, 'output': output}
+    config_run = {'qcf': qcf, 'bands': bands, 'files': files, 'xml_files': xml_files, 'output': output}
 
     ################################
     # init message

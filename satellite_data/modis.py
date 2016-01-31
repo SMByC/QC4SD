@@ -5,6 +5,7 @@
 #  Authors: Xavier Corredor Llano
 #  Email: xcorredorl at ideam.gov.co
 
+import xml.etree.ElementTree as ET
 from datetime import date
 try:
     from osgeo import gdal
@@ -19,9 +20,11 @@ from QC4SD.quality_control.modis import ModisQC
 
 class MODIS(SatelliteData):
 
-    def __init__(self, file):
+    def __init__(self, file, xml_file):
         """Initialize the class of MODIS products
 
+        :param xml_file: path to input xml file
+        :type xml_file: str
         :param file: path to input file
         :type file: str
         """
@@ -29,12 +32,12 @@ class MODIS(SatelliteData):
         super().__init__(file)
 
         # load metadata
-        self.satellite = self.get_metadata('ASSOCIATEDPLATFORMSHORTNAME')  # Terra
-        self.shortname = self.get_metadata('SHORTNAME')  # MOD09A1
-        self.tile = self.get_metadata('LOCALGRANULEID').split('.')[2]  # h10v07
-        self.longname = self.get_metadata('LONGNAME')  # MODIS/Terra Surface Reflectance 8-Day L3 Global 500m SIN Grid
+        tree = ET.parse(xml_file)
+        self.satellite = list(tree.iter('PlatformShortName'))[0].text  # Terra
+        self.shortname = list(tree.iter('ShortName'))[0].text  # MOD09A1
+        self.tile = list(tree.iter('LocalGranuleID'))[0].text.split('.')[2]  # h10v07
         # get the beginning date
-        dt_d = [int(x) for x in self.get_metadata('RANGEBEGINNINGDATE').split('-')]
+        dt_d = [int(x) for x in list(tree.iter('RangeBeginningDate'))[0].text.split('-')]
         self.start_date = date(dt_d[0], dt_d[1], dt_d[2])
         # calculate Julian date of the beginning date
         self.start_jday = self.start_date.timetuple().tm_yday
@@ -47,6 +50,7 @@ class MODIS(SatelliteData):
         SatelliteData.tile = self.tile
 
         self.set_quality_control_bands()
+        del tree
 
     def set_quality_control_bands(self):
         """Create all quality control bands class (ModisQC)
