@@ -3,7 +3,7 @@
 #
 #  Some functions and libraries
 #
-#  (c) Copyright SMBYC - IDEAM 2015
+#  (c) Copyright SMBYC - IDEAM 2015-2016
 #  Authors: Xavier Corredor Llano
 #  Email: xcorredorl at ideam.gov.co
 
