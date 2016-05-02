@@ -1,0 +1,10 @@
+site_name: QC4SD
+site_description: Quality control algorithm for satellite data (MODIS and LANDSAT)
+site_author: Xavier Corredor Llano, SMBYC-IDEAM
+#site_favicon: favicon_whale.png
+site_url: http://smbyc.bitbucket.org/qc4sd
+repo_url: https://bitbucket.org/SMBYC/qc4sd
+theme: readthedocs
+pages:
+- Home: index.md
+- Test: test.md
