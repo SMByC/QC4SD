@@ -57,7 +57,7 @@ def new(file, xml_file):
     del tree
 
     if satellite_instrument == 'MODIS':
-        from QC4SD.satellite_data.modis import MODIS
+        from qc4sd.satellite_data.modis import MODIS
         MODIS(file, xml_file)
     elif satellite_instrument == 'LANDSAT':
         pass

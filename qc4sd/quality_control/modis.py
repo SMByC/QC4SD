@@ -10,7 +10,7 @@ try:
 except ImportError:
     import gdal
 
-from QC4SD.lib import fix_binary_string, int2bin
+from qc4sd.lib import fix_binary_string, int2bin
 
 
 class ModisQC:

@@ -17,9 +17,9 @@ import os
 import argparse
 import gc
 
-from QC4SD.quality_control.quality_control import QualityControl
-from QC4SD.quality_control.quality_control_file import setup_quality_control_file
-from QC4SD.satellite_data.satellite_data import load_satellite_data, SatelliteData
+from qc4sd.quality_control.quality_control import QualityControl
+from qc4sd.quality_control.quality_control_file import setup_quality_control_file
+from qc4sd.satellite_data.satellite_data import load_satellite_data, SatelliteData
 
 BASE_DIR = os.path.dirname(__file__)
 DEFAULT_QCF = os.path.join(BASE_DIR, 'quality_control', 'qc_default_modis_settings.ini')
@@ -29,7 +29,7 @@ DEFAULT_QCF = os.path.join(BASE_DIR, 'quality_control', 'qc_default_modis_settin
 def run(qcf, bands, files, output):
     """Main process, execute directly if imported as module.
 
-        >>> from QC4SD import qc4sd
+        >>> from qc4sd import qc4sd
         >>> qc4sd.run(settings.ini, 1, [file1, file2])
 
     :param qcf: quality control file or 'default'
