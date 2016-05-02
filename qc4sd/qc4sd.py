@@ -121,6 +121,9 @@ def script():
     parser = argparse.ArgumentParser(
         prog='qc4sd',
         description='Quality control algorithm for satellite data',
+        epilog="Xavier Corredor Llano <xcorredorl@ideam.gov.co>\n"
+               "Sistema de Monitoreo de Bosques y Carbono - SMBYC\n"
+               "IDEAM, Colombia",
         formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('-qcf', type=str, help='quality control file', required=True)
@@ -138,12 +141,6 @@ def script():
                          " band (int) or bands comma separated without space.")
 
     run(args.qcf, args.bands, args.files, args.output)
-
-    ################################
-    # end message
-    print("\nCopyright (c) 2015 SMBYC-IDEAM")
-    print("Instituto de Hidrología, Meteorología y Estudios Ambientales")
-    print("Sistema de Monitoreo de Bosques y Carbono - SMBYC")
 
 
 if __name__ == '__main__':
