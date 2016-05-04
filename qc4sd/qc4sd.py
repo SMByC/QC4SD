@@ -14,7 +14,6 @@
 ##################################################################
 
 import os
-import argparse
 import gc
 
 from qc4sd.quality_control.quality_control import QualityControl
@@ -109,39 +108,3 @@ def run(qcf, bands, files, output):
     QualityControl.list = []
     # force run garbage collector memory
     gc.collect()
-
-
-def script():
-    """Execute only if run as a script.
-
-        $ python3 qc4sd.py -qcf settings.ini -band 1 file1 file2
-    """
-
-    # Create parser arguments
-    parser = argparse.ArgumentParser(
-        prog='qc4sd',
-        description='Quality control algorithm for satellite data',
-        epilog="Xavier Corredor Llano <xcorredorl@ideam.gov.co>\n"
-               "Sistema de Monitoreo de Bosques y Carbono - SMBYC\n"
-               "IDEAM, Colombia",
-        formatter_class=argparse.RawTextHelpFormatter)
-
-    parser.add_argument('-qcf', type=str, help='quality control file', required=True)
-    parser.add_argument('-bands', type=str, help='band or bands to process', required=True)
-    parser.add_argument('-output', type=str, help='output directory for save results', default=os.getcwd())
-    parser.add_argument('files', type=str, help='files to process', nargs='*')
-
-    args = parser.parse_args()
-
-    # formatted the bands argument
-    try:
-        args.bands = [int(b) for b in list(args.bands.split(','))]
-    except:
-        raise ValueError("Incorrect format or error value for 'bands', this should be"
-                         " band (int) or bands comma separated without space.")
-
-    run(args.qcf, args.bands, args.files, args.output)
-
-
-if __name__ == '__main__':
-    script()
