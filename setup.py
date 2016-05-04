@@ -19,10 +19,11 @@ setup(
     author_email='xcorredorl@ideam.gov.co, smbyc@ideam.gov.co',
     url='https://bitbucket.org/SMBYC/qc4sd',
     license='GPLv3',
-    packages=find_packages(exclude=('docs',)),
+    packages=find_packages(),
     install_requires=['gdal',
                       'numpy',
                       'matplotlib'],
+    scripts=['bin/qc4sd'],
     platforms=['Any'],
     classifiers=[
         "Development Status :: 4 - Beta",
