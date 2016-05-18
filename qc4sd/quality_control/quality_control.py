@@ -351,8 +351,9 @@ class QualityControl:
         # settings projection and output raster
         driver = gdal.GetDriverByName('GTiff')
         nbands = len(self.output_bands)
-        outRaster = driver.Create(os.path.join(output_dir, self.output_filename), sd.get_cols(self.band),
-                                  sd.get_rows(self.band), nbands, gdal.GDT_Int16)
+        outRaster = driver.Create(os.path.join(output_dir, self.output_filename),
+                                  sd.get_cols(self.band), sd.get_rows(self.band),
+                                  nbands, gdal.GDT_Int16, ["COMPRESS=LZW", "PREDICTOR=2", "TILED=YES"])
         outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
         outRasterSRS = osr.SpatialReference()
         outRasterSRS.ImportFromWkt(gdal_data_band.GetProjectionRef())
