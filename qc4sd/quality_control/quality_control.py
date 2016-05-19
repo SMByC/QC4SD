@@ -341,7 +341,7 @@ class QualityControl:
         # get gdal properties of one of data band
         sd = SatelliteData.list[0]
         data_band_name = [x for x in sd.sub_datasets if 'b'+fix_zeros(self.band, 2) in x[1]][0][0]
-        gdal_data_band = gdal.Open(data_band_name)
+        gdal_data_band = gdal.Open(data_band_name, gdal.GA_ReadOnly)
         geotransform = gdal_data_band.GetGeoTransform()
         originX = geotransform[0]
         originY = geotransform[3]

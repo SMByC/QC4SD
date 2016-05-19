@@ -103,29 +103,29 @@ class MODIS(SatelliteData):
         # TODO: optimize/performance the table open/access in memory (pytables?)
 
         data_band_name = [x for x in self.sub_datasets if 'b'+fix_zeros(band, 2) in x[1]][0][0]
-        gdal_data_band = gdal.Open(data_band_name)
+        gdal_data_band = gdal.Open(data_band_name, gdal.GA_ReadOnly)
         data_band_raster = gdal_data_band.ReadAsArray()
         del gdal_data_band
         return data_band_raster
 
     def get_cols(self, band):
         data_band_name = [x for x in self.sub_datasets if 'b'+fix_zeros(band, 2) in x[1]][0][0]
-        gdal_data_band = gdal.Open(data_band_name)
+        gdal_data_band = gdal.Open(data_band_name, gdal.GA_ReadOnly)
         return gdal_data_band.RasterXSize
 
     def get_rows(self, band):
         data_band_name = [x for x in self.sub_datasets if 'b'+fix_zeros(band, 2) in x[1]][0][0]
-        gdal_data_band = gdal.Open(data_band_name)
+        gdal_data_band = gdal.Open(data_band_name, gdal.GA_ReadOnly)
         return gdal_data_band.RasterYSize
 
     def get_total_pixels(self, band):
         data_band_name = [x for x in self.sub_datasets if 'b'+fix_zeros(band, 2) in x[1]][0][0]
-        gdal_data_band = gdal.Open(data_band_name)
+        gdal_data_band = gdal.Open(data_band_name, gdal.GA_ReadOnly)
         return gdal_data_band.RasterXSize*gdal_data_band.RasterYSize
 
     def get_nodata_value(self, band):
         data_band_name = [x for x in self.sub_datasets if 'b'+fix_zeros(band, 2) in x[1]][0][0]
-        gdal_data_band = gdal.Open(data_band_name)
+        gdal_data_band = gdal.Open(data_band_name, gdal.GA_ReadOnly)
         return gdal_data_band.GetRasterBand(1).GetNoDataValue()
 
     def get_quality_control_bands(self, band):

@@ -26,7 +26,7 @@ class ModisQC:
         self.qc_name = qc_name
         self.num_bits = num_bits
         # get raster for quality control band
-        gdal_dataset_qc = gdal.Open(self.qc_name)
+        gdal_dataset_qc = gdal.Open(self.qc_name, gdal.GA_ReadOnly)
         self.quality_control_raster = gdal_dataset_qc.ReadAsArray()
         del gdal_dataset_qc
         # statistics for invalid pixel in respective field

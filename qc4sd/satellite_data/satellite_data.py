@@ -33,7 +33,7 @@ class SatelliteData:
         self.file = file
         self.file_name = os.path.basename(file)
 
-        gdal_dataset = gdal.Open(file)
+        gdal_dataset = gdal.Open(file, gdal.GA_ReadOnly)
         self.sub_datasets = gdal_dataset.GetSubDatasets()
         del gdal_dataset
 
