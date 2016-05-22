@@ -364,6 +364,7 @@ class QualityControl:
             outband = outRaster.GetRasterBand(nband + 1)
             outband.WriteArray(data_band_raster)
             #outband.WriteArray(sd.get_data_band(self.band))
+            outband.SetNoDataValue(self.nodata_value)
             outband.FlushCache()
 
 
