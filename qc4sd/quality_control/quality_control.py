@@ -255,6 +255,10 @@ class QualityControl:
         # rewrite list after clean
         all_invalid_pixels = list(map(list, zip(*all_invalid_pixels_T)))
 
+        if not all_invalid_pixels:
+            print("\nWARNING: the invalid pixels is zero! nothing pixels was filtered.\n")
+            return
+
         max_y = max([max(sub_l) for sub_l in all_invalid_pixels_T])  # y max over all times
 
         # fix position for y label
