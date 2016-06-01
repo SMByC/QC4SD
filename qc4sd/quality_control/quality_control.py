@@ -244,6 +244,13 @@ class QualityControl:
         plt.tick_params(axis='both', which='both', bottom='off', top='off',
                         labelbottom='on', left='off', right='off', labelleft='on')
         all_invalid_pixels_T = list(map(list, zip(*all_invalid_pixels)))
+
+        # delete all group of list that have only zeros, this is delete types of
+        # invalid pixels that not filter any pixel in all image across the time
+        all_invalid_pixels_T = [x for x in all_invalid_pixels_T if {0} != set(x)]
+        # rewrite list after clean
+        all_invalid_pixels = list(map(list, zip(*all_invalid_pixels_T)))
+
         max_y = max(all_invalid_pixels_T[0])
 
         # fix position for y label
