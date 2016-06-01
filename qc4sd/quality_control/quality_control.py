@@ -255,7 +255,7 @@ class QualityControl:
         # rewrite list after clean
         all_invalid_pixels = list(map(list, zip(*all_invalid_pixels_T)))
 
-        max_y = max(all_invalid_pixels_T[0])
+        max_y = max([max(sub_l) for sub_l in all_invalid_pixels_T])  # y max over all times
 
         # fix position for y label
         y_pos_label_fixed = deepcopy(all_invalid_pixels[-1])
@@ -268,7 +268,9 @@ class QualityControl:
                     iter_pos += -1
                 y_pos_label_fixed[idx] = all_invalid_pixels[iter_pos][idx]
 
-        repulsive_distance = None
+        # set initial value for repulsive_items_list
+        repulsive_distance = max_y * 0.035
+
         fix_list = True
         while fix_list:
             fix_list, repulsive_distance, y_pos_label_fixed = repulsive_items_list(y_pos_label_fixed, repulsive_distance)
