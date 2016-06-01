@@ -247,7 +247,11 @@ class QualityControl:
 
         # delete all group of list that have only zeros, this is delete types of
         # invalid pixels that not filter any pixel in all image across the time
-        all_invalid_pixels_T = [x for x in all_invalid_pixels_T if {0} != set(x)]
+        delete_zeros_lists = [idx for idx, values in enumerate(all_invalid_pixels_T) if set(values) == {0}]
+        delete_zeros_lists.reverse()
+        for del_idx in delete_zeros_lists:
+                del all_invalid_pixels_T[del_idx]
+                del all_filter_names[del_idx]
         # rewrite list after clean
         all_invalid_pixels = list(map(list, zip(*all_invalid_pixels_T)))
 
@@ -280,11 +284,13 @@ class QualityControl:
             for idx, line in enumerate(all_invalid_pixels_T):
                 if idx == 0:
                     plt.plot(0, line, 'ro', markersize=9, color=m.to_rgba(idx), linewidth=3.4, alpha=1)
+                    # put value of total invalid pixel for each x item (time)
                     for x, y in zip(range(len(SatelliteData.list)), line):
                         ax.text(x, y+max_y*0.02, "{0}%".format(round(100*y/SatelliteData.list[idx].get_total_pixels(self.band), 2)),
                                 ha='center', va='bottom', color=m.to_rgba(idx), fontweight='bold', fontsize=12, alpha=1)
                 else:
                     plt.plot(0, line, 'ro', markersize=9, color=m.to_rgba(idx), linewidth=3, alpha=1)
+                # y label of filter name
                 plt.text(0.3, y_pos_label_fixed[idx], all_filter_names[idx],
                          fontsize=12, weight='bold', color=m.to_rgba(idx), alpha=1)
             plt.xlim(-0.5, 0.5)
@@ -303,11 +309,13 @@ class QualityControl:
             for idx, line in enumerate(all_invalid_pixels_T):
                 if idx == 0:
                     plt.plot(line, color=m.to_rgba(idx), linewidth=3.4, alpha=1)
+                    # put value of total invalid pixel for each x item (time)
                     for x, y in zip(range(len(SatelliteData.list)), line):
                         ax.text(x, y+max_y*0.02, "{0}%".format(round(100*y/SatelliteData.list[idx].get_total_pixels(self.band), 2)),
                                 ha='center', va='bottom', color=m.to_rgba(idx), fontweight='bold', fontsize=12, alpha=1)
                 else:
                     plt.plot(line, color=m.to_rgba(idx), linewidth=3, alpha=1)
+                # y label of filter name
                 plt.text(len(SatelliteData.list)-1+0.02, y_pos_label_fixed[idx], all_filter_names[idx],
                          fontsize=12, weight='bold', color=m.to_rgba(idx), alpha=1)
             plt.xlim(-len(SatelliteData.list)*0.01, len(SatelliteData.list)-1+len(SatelliteData.list)*0.01)
