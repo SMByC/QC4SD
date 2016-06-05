@@ -65,8 +65,30 @@ class QualityControl:
 
         for x in x_chunk:
             for y, data_band_pixel in enumerate(self.data_band_raster_to_process[x]):
-                #if not (0 < x < 200 and 200 < y < 400):
+                # for check a particular frame in the image, only for test
+                # if not (0 < x < 200 and 200 < y < 400):
+                #     continue
+
+                # part 1 mode A
+                #if not (968 < y < 1189 and 1361 < x < 1774):
                 #    continue
+                # part 2 mode A
+                #if not (540 < y < 1041 and 2061 < x < 2367):
+                #    continue
+                # part 3 mode A
+                #if not (745 < y < 1302 and 227 < x < 893):
+                #    continue
+
+                # part 1 mode Q
+                # if not (1938 < y < 2378 and 2723 < x < 3549):
+                #    continue
+                # part 2 mode Q
+                # if not (1082 < y < 2082 and 4124 < x < 4736):
+                #    continue
+                # part 3 mode Q
+                #if not (1492 < y < 2604 and 456 < x < 1788):
+                #    continue
+
                 # if pixel is not valid then don't check it
                 if data_band_pixel == int(self.nodata_value):
                     continue
@@ -361,24 +383,16 @@ class QualityControl:
               .format(self.band, self.output_filename))
         # get gdal properties of one of data band
         sd = SatelliteData.list[0]
-        data_band_name = [x for x in sd.sub_datasets if 'b'+fix_zeros(self.band, 2) in x[1]][0][0]
-        gdal_data_band = gdal.Open(data_band_name, gdal.GA_ReadOnly)
-        geotransform = gdal_data_band.GetGeoTransform()
-        originX = geotransform[0]
-        originY = geotransform[3]
-        pixelWidth = geotransform[1]
-        pixelHeight = geotransform[5]
 
-        # settings projection and output raster
+        # create output raster
         driver = gdal.GetDriverByName('GTiff')
         nbands = len(self.output_bands)
         outRaster = driver.Create(os.path.join(output_dir, self.output_filename),
                                   sd.get_cols(self.band), sd.get_rows(self.band),
                                   nbands, gdal.GDT_Int16, ["COMPRESS=LZW", "PREDICTOR=2", "TILED=YES"])
-        outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
-        outRasterSRS = osr.SpatialReference()
-        outRasterSRS.ImportFromWkt(gdal_data_band.GetProjectionRef())
-        outRaster.SetProjection(outRasterSRS.ExportToWkt())
+        # set projection
+        outRaster.SetGeoTransform(sd.geotransform)
+        outRaster.SetProjection(sd.projection)
 
         # write bands
         for nband, data_band_raster in enumerate(self.output_bands):
