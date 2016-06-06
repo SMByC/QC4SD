@@ -6,7 +6,6 @@
 #  Email: xcorredorl at ideam.gov.co
 
 import os
-import osr
 import xml.etree.ElementTree as ET
 try:
     from osgeo import gdal
@@ -36,13 +35,6 @@ class SatelliteData:
 
         gdal_dataset = gdal.Open(file, gdal.GA_ReadOnly)
         self.sub_datasets = gdal_dataset.GetSubDatasets()
-
-        # get and save the projection and geotransform of the input file
-        outRasterSRS = osr.SpatialReference()
-        outRasterSRS.ImportFromWkt(gdal_dataset.GetProjectionRef())
-        self.projection = outRasterSRS.ExportToWkt()
-        self.geotransform = gdal_dataset.GetGeoTransform()
-
         del gdal_dataset
 
     def __str__(self):

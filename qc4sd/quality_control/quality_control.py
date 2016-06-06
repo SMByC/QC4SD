@@ -383,6 +383,13 @@ class QualityControl:
               .format(self.band, self.output_filename))
         # get gdal properties of one of data band
         sd = SatelliteData.list[0]
+        data_band_name = [x for x in sd.sub_datasets if 'b'+fix_zeros(self.band, 2) in x[1]][0][0]
+        gdal_data_band = gdal.Open(data_band_name, gdal.GA_ReadOnly)
+        geotransform = gdal_data_band.GetGeoTransform()
+        originX = geotransform[0]
+        originY = geotransform[3]
+        pixelWidth = geotransform[1]
+        pixelHeight = geotransform[5]
 
         # create output raster
         driver = gdal.GetDriverByName('GTiff')
@@ -391,8 +398,10 @@ class QualityControl:
                                   sd.get_cols(self.band), sd.get_rows(self.band),
                                   nbands, gdal.GDT_Int16, ["COMPRESS=LZW", "PREDICTOR=2", "TILED=YES"])
         # set projection
-        outRaster.SetGeoTransform(sd.geotransform)
-        outRaster.SetProjection(sd.projection)
+        outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
+        outRasterSRS = osr.SpatialReference()
+        outRasterSRS.ImportFromWkt(gdal_data_band.GetProjectionRef())
+        outRaster.SetProjection(outRasterSRS.ExportToWkt())
 
         # write bands
         for nband, data_band_raster in enumerate(self.output_bands):
