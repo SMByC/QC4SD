@@ -71,7 +71,7 @@ class MODIS(SatelliteData):
             # Solar Zenith Angle
             qc_name = [x for x in self.sub_datasets if 'szen' in x[1]][0][0]
             self.qc_bands['sza'] = ModisQC(self.shortname, 'sza', qc_name)
-            # View Zenith Angle
+            # View/Sensor Zenith Angle
             qc_name = [x for x in self.sub_datasets if 'vzen' in x[1]][0][0]
             self.qc_bands['vza'] = ModisQC(self.shortname, 'vza', qc_name)
             # Relative Zenith Angle
@@ -89,6 +89,21 @@ class MODIS(SatelliteData):
             # Reflectance band quality
             qc_name = [x for x in self.sub_datasets if '_qc_' in x[1]][0][0]
             self.qc_bands['rbq'] = ModisQC(self.shortname, 'rbq', qc_name, num_bits=16)
+
+        # for MOD09/MYD09 GA (Collection 6)
+        if self.shortname in ['MOD09GA', 'MYD09GA']:
+            # Reflectance band quality
+            qc_name = [x for x in self.sub_datasets if 'QC_500m' in x[1]][0][0]
+            self.qc_bands['rbq'] = ModisQC(self.shortname, 'rbq', qc_name, num_bits=32)
+            # Reflectance State QA flags
+            qc_name = [x for x in self.sub_datasets if 'state_1km' in x[1]][0][0]
+            self.qc_bands['sf'] = ModisQC(self.shortname, 'sf', qc_name, num_bits=16, scale_resolution=0.5)
+            # Solar Zenith Angle
+            qc_name = [x for x in self.sub_datasets if 'SolarZenith' in x[1]][0][0]
+            self.qc_bands['sza'] = ModisQC(self.shortname, 'sza', qc_name, scale_resolution=0.5)
+            # View/Sensor Zenith Angle
+            qc_name = [x for x in self.sub_datasets if 'SensorZenith' in x[1]][0][0]
+            self.qc_bands['vza'] = ModisQC(self.shortname, 'vza', qc_name, scale_resolution=0.5)
 
     def get_data_band(self, band):
         """Return the raster of the data band for respective band

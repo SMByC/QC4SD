@@ -10,7 +10,7 @@ try:
 except ImportError:
     import gdal
 
-from qc4sd.quality_control.modis import mxd09a1, mxd09q1
+from qc4sd.quality_control.modis import mxd09a1, mxd09q1, mxd09ga
 
 
 class ModisQC:
@@ -20,11 +20,14 @@ class ModisQC:
     and rules for check the quality control for one pixel.
     """
 
-    def __init__(self, sd_shortname, id_name, qc_name, num_bits=None):
+    def __init__(self, sd_shortname, id_name, qc_name, num_bits=None, scale_resolution=1):
         self.sd_shortname = sd_shortname
         self.id_name = id_name
         self.qc_name = qc_name
         self.num_bits = num_bits
+        # scale_resolution is the different resolution between quality control band and
+        # the data band, 0.5 mean that data band is the double resolution of qc band
+        self.scale_resolution = scale_resolution
         # get raster for quality control band
         gdal_dataset_qc = gdal.Open(self.qc_name, gdal.GA_ReadOnly)
         self.quality_control_raster = gdal_dataset_qc.ReadAsArray()
@@ -41,7 +44,7 @@ class ModisQC:
             # set the full name for this quality control band
             if self.id_name == 'rbq': self.full_name = 'Reflectance Band Quality'
             if self.id_name == 'sza': self.full_name = 'Solar Zenith Angle'
-            if self.id_name == 'vza': self.full_name = 'View Zenith Angle'
+            if self.id_name == 'vza': self.full_name = 'View/Sensor Zenith Angle'
             if self.id_name == 'rza': self.full_name = 'Relative Zenith Angle'
             if self.id_name == 'sf':  self.full_name = 'Reflectance State QA flags'
 
@@ -52,6 +55,16 @@ class ModisQC:
             # set the full name for this quality control band
             if self.id_name == 'sf':  self.full_name = 'Reflectance State QA flags'
             if self.id_name == 'rbq': self.full_name = 'Reflectance Band Quality'
+
+        # [MXD09GA] ########################################################
+        # for MOD09GA and MYD09GA (Collection 6)
+        if self.sd_shortname in ['MOD09GA', 'MYD09GA']:
+
+            # set the full name for this quality control band
+            if self.id_name == 'rbq': self.full_name = 'Reflectance Band Quality'
+            if self.id_name == 'sf':  self.full_name = 'Reflectance State QA flags'
+            if self.id_name == 'sza': self.full_name = 'Solar Zenith Angle'
+            if self.id_name == 'vza': self.full_name = 'View/Sensor Zenith Angle'
 
     def init_statistics(self, qcf):
         """Configure and initialize statistics values. This need to be
@@ -99,6 +112,25 @@ class ModisQC:
             if len(single_qcf_values) == 1 and single_qcf_values.pop() == 'true':
                 self.need_check = False
 
+        # [MXD09GA] ########################################################
+        # for MOD09GA and MYD09GA
+        if self.sd_shortname in ['MOD09GA', 'MYD09GA']:
+
+            # create and init the statistics fields dictionary to zero count value,
+            # for specific quality control band (id_name) that belonging this instance
+            keys_from_qcf = list(qcf['MXD09GA'].keys())
+            self.invalid_pixels = dict((k, 0) for k in keys_from_qcf if k.startswith(self.id_name+'_'))
+
+            # verification if this quality band type need to check:
+            # if all items of this qc type in qcf are True, this means
+            # that this qc don't need to be check, all pass this qc
+            single_qcf_values = set([v for k,v in qcf['MXD09GA'].items() if k.startswith(self.id_name+'_')])
+            if len(single_qcf_values) == 1 and single_qcf_values.pop() == 'true':
+                self.need_check = False
+            if self.id_name == 'sza' or self.id_name == 'vza':
+                if qcf.getint('MXD09GA', self.id_name + '_min') == 0 and qcf.getint('MXD09GA', self.id_name + '_max') == 180:
+                    self.need_check = False
+
     def quality_control_check(self, x, y, band, qcf):
         """Check if the specific pixel in x and y position pass or not
         pass all quality controls, this is evaluate with the quality
@@ -120,8 +152,12 @@ class ModisQC:
         if self.need_check is False:
             return True
 
+        # apply the scale factor resolution different between data and qc
+        qc_x = int(x * self.scale_resolution)
+        qc_y = int(y * self.scale_resolution)
+
         # get the pixel value for specific band of quality control
-        qc_pixel_value = self.quality_control_raster.item((x, y))
+        qc_pixel_value = self.quality_control_raster.item((qc_x, qc_y))
 
         # [MXD09A1] ########################################################
         # for MOD09A1 and MYD09A1 (Collection 6)
@@ -143,5 +179,17 @@ class ModisQC:
             quality_control_band = {
                 'sf': mxd09q1.sf,
                 'rbq': mxd09q1.rbq,
+            }
+            return quality_control_band[self.id_name](self, qcf, band, qc_pixel_value)
+
+        # [MXD09GA] ########################################################
+        # for MOD09GA and MYD09GA (Collection 6)
+        if self.sd_shortname in ['MOD09GA', 'MYD09GA']:
+            # switch case for quality control band
+            quality_control_band = {
+                'rbq': mxd09ga.rbq,
+                'sf': mxd09ga.sf,
+                'sza': mxd09ga.sza,
+                'vza': mxd09ga.vza,
             }
             return quality_control_band[self.id_name](self, qcf, band, qc_pixel_value)
