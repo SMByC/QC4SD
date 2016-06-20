@@ -58,7 +58,7 @@ class QualityControl:
         """Check the quality control for data band pixel per pixel
         processing it pixels grouped by chunks of rows in multiprocess
         """
-        statistics = {'total_invalid_pixels': 0, 'invalid_pixels': {}}
+        statistics = {'total_invalid_pixels': 0, 'nodata_pixels': 0, 'invalid_pixels': {}}
 
         #pixels_no_pass_qc = np.empty((0, 2), dtype=int)
         pixels_no_pass_qc = []
@@ -89,8 +89,10 @@ class QualityControl:
                 #if not (1492 < y < 2604 and 456 < x < 1788):
                 #    continue
 
-                # if pixel is not valid then don't check it
+                # if pixel is not valid then don't check it and save statistic
                 if data_band_pixel == int(self.nodata_value):
+                    statistics['nodata_pixels'] += 1
+                    statistics['total_invalid_pixels'] += 1
                     continue
                 # check pixel with all items of all quality control bands configured
                 pixel_check_list = []
@@ -136,7 +138,7 @@ class QualityControl:
         # for each file
         for sd in SatelliteData.list:
             # statistics for this satellite data (pixels and quality controls bands)
-            sd_statistics = {'total_pixels': sd.get_total_pixels(self.band), 'total_invalid_pixels': 0, 'invalid_pixels': {}}
+            sd_statistics = {'total_pixels': sd.get_total_pixels(self.band), 'total_invalid_pixels': 0, 'nodata_pixels': 0, 'invalid_pixels': {}}
             # get NoData value specific for band/product
             self.nodata_value = sd.get_nodata_value(self.band)
             # get raster for band to process
@@ -240,6 +242,7 @@ class QualityControl:
             filters = _tmp_dict
 
             sd_time_series = [self.quality_control_statistics[sd_name]['total_invalid_pixels']]
+            sd_time_series += [self.quality_control_statistics[sd_name]['nodata_pixels']]
             for filter_name in all_filter_names:
                 if filter_name in filters:
                     sd_time_series.append(filters[filter_name])
@@ -247,7 +250,7 @@ class QualityControl:
                     sd_time_series.append(float('nan'))
             all_invalid_pixels.append(sd_time_series)
 
-        all_filter_names = ['total_invalid_pixels'] + list(all_filter_names)
+        all_filter_names = ['total_invalid_pixels'] + ['nodata_pixels'] + list(all_filter_names)
         #all_filter_names = [name.replace('_', ' ') for name in all_filter_names]
 
         ################################
