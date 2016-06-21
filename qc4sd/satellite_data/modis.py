@@ -104,6 +104,12 @@ class MODIS(SatelliteData):
             qc_name = [x for x in self.sub_datasets if 'SensorZenith' in x[1]][0][0]
             self.qc_bands['vza'] = ModisQC(self.shortname, 'vza', qc_name, scale_resolution=0.5)
 
+        # for MOD09/MYD09 GQ (Collection 6)
+        if self.shortname in ['MOD09GQ', 'MYD09GQ']:
+            # Reflectance band quality
+            qc_name = [x for x in self.sub_datasets if 'QC_250m' in x[1]][0][0]
+            self.qc_bands['rbq'] = ModisQC(self.shortname, 'rbq', qc_name, num_bits=16)
+
     def get_data_band(self, band):
         """Return the raster of the data band for respective band
         of the file.
@@ -143,4 +149,4 @@ class MODIS(SatelliteData):
         return gdal_data_band.GetRasterBand(1).GetNoDataValue()
 
     def get_quality_control_bands(self, band):
-        return [x for x in self.sub_datasets if 'b0'+str(band) in x[1]][0][0]
+        return [x for x in self.sub_datasets if 'b'+fix_zeros(band, 2) in x[1]][0][0]

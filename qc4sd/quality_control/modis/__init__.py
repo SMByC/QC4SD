@@ -10,7 +10,7 @@ try:
 except ImportError:
     import gdal
 
-from qc4sd.quality_control.modis import mxd09a1, mxd09q1, mxd09ga
+from qc4sd.quality_control.modis import mxd09a1, mxd09q1, mxd09ga, mxd09gq
 
 
 class ModisQC:
@@ -65,6 +65,13 @@ class ModisQC:
             if self.id_name == 'sf':  self.full_name = 'Reflectance State QA flags'
             if self.id_name == 'sza': self.full_name = 'Solar Zenith Angle'
             if self.id_name == 'vza': self.full_name = 'View/Sensor Zenith Angle'
+
+        # [MXD09GQ] ########################################################
+        # for MOD09GQ and MYD09GQ (Collection 6)
+        if self.sd_shortname in ['MOD09GQ', 'MYD09GQ']:
+
+            # set the full name for this quality control band
+            if self.id_name == 'rbq': self.full_name = 'Reflectance Band Quality'
 
     def init_statistics(self, qcf):
         """Configure and initialize statistics values. This need to be
@@ -131,6 +138,22 @@ class ModisQC:
                 if qcf.getint('MXD09GA', self.id_name + '_min') == 0 and qcf.getint('MXD09GA', self.id_name + '_max') == 180:
                     self.need_check = False
 
+        # [MXD09GQ] ########################################################
+        # for MOD09GQ and MYD09GQ
+        if self.sd_shortname in ['MOD09GQ', 'MYD09GQ']:
+
+            # create and init the statistics fields dictionary to zero count value,
+            # for specific quality control band (id_name) that belonging this instance
+            keys_from_qcf = list(qcf['MXD09GQ'].keys())
+            self.invalid_pixels = dict((k, 0) for k in keys_from_qcf if k.startswith(self.id_name + '_'))
+
+            # verification if this quality band type need to check:
+            # if all items of this qc type in qcf are True, this means
+            # that this qc don't need to be check, all pass this qc
+            single_qcf_values = set([v for k, v in qcf['MXD09GQ'].items() if k.startswith(self.id_name + '_')])
+            if len(single_qcf_values) == 1 and single_qcf_values.pop() == 'true':
+                self.need_check = False
+
     def quality_control_check(self, x, y, band, qcf):
         """Check if the specific pixel in x and y position pass or not
         pass all quality controls, this is evaluate with the quality
@@ -191,5 +214,14 @@ class ModisQC:
                 'sf': mxd09ga.sf,
                 'sza': mxd09ga.sza,
                 'vza': mxd09ga.vza,
+            }
+            return quality_control_band[self.id_name](self, qcf, band, qc_pixel_value)
+
+        # [MXD09GQ] ########################################################
+        # for MOD09GQ and MYD09GQ (Collection 6)
+        if self.sd_shortname in ['MOD09GQ', 'MYD09GQ']:
+            # switch case for quality control band
+            quality_control_band = {
+                'rbq': mxd09gq.rbq,
             }
             return quality_control_band[self.id_name](self, qcf, band, qc_pixel_value)
