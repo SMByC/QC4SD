@@ -347,9 +347,9 @@ class QualityControl:
                 else:
                     plt.plot(line, color=m.to_rgba(idx), linewidth=3, alpha=1)
                 # y label of filter name
-                plt.text(len(SatelliteData.list)-1+0.02, y_pos_label_fixed[idx], all_filter_names[idx],
-                         fontsize=12, weight='bold', color=m.to_rgba(idx), alpha=1)
-            plt.xlim(-len(SatelliteData.list)*0.01, len(SatelliteData.list)-1+len(SatelliteData.list)*0.01)
+                plt.text(len(SatelliteData.list)-1+len(SatelliteData.list)*0.02, y_pos_label_fixed[idx],
+                         all_filter_names[idx], fontsize=12, weight='bold', color=m.to_rgba(idx), alpha=1)
+            plt.xlim(-len(SatelliteData.list)*0.02, len(SatelliteData.list)-1+len(SatelliteData.list)*0.02)
             plt.xticks(range(len(sd_names_sorted)), sd_names_sorted, rotation=90)
             plt.ylim(-max_y*0.01, max_y+max_y*0.07)
             plt.title("Invalid pixels for {0} {1} in band {2}\nQC4SD - IDEAM".
