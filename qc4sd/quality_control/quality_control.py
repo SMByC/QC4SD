@@ -10,9 +10,9 @@ import gc
 import osr
 import resource
 import multiprocessing
+from subprocess import call
 from copy import deepcopy
 from math import ceil, floor, isnan
-
 try:
     from osgeo import gdal
 except ImportError:
@@ -364,6 +364,13 @@ class QualityControl:
 
         plt.savefig(img_filename, dpi=86)
         plt.close('all')
+
+        # trim whitespace
+        try:
+            call(["convert", img_filename, "-trim", "-bordercolor", "white", "-border", "8x8", "+repage", "-alpha", "off", img_filename])
+            print('trim image successfully')
+        except:
+            pass
 
         # for sd_name, sd_invalid_pixels in self.quality_control_statistics.items():
         #     print()
