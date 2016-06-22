@@ -72,6 +72,7 @@ class ModisQC:
 
             # set the full name for this quality control band
             if self.id_name == 'rbq': self.full_name = 'Reflectance Band Quality'
+            if self.id_name == 'sf':  self.full_name = 'Reflectance State QA flags'
 
     def init_statistics(self, qcf):
         """Configure and initialize statistics values. This need to be
@@ -223,5 +224,6 @@ class ModisQC:
             # switch case for quality control band
             quality_control_band = {
                 'rbq': mxd09gq.rbq,
+                'sf': mxd09ga.sf,
             }
             return quality_control_band[self.id_name](self, qcf, band, qc_pixel_value)

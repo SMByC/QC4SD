@@ -5,6 +5,7 @@
 #  Authors: Xavier Corredor Llano
 #  Email: xcorredorl at ideam.gov.co
 
+import os
 import xml.etree.ElementTree as ET
 from datetime import date
 try:
@@ -94,13 +95,13 @@ class MODIS(SatelliteData):
             # Reflectance band quality
             qc_name = [x for x in self.sub_datasets if 'QC_500m' in x[1]][0][0]
             self.qc_bands['rbq'] = ModisQC(self.shortname, 'rbq', qc_name, num_bits=32)
-            # Reflectance State QA flags
+            # Reflectance State QA flags at 1km
             qc_name = [x for x in self.sub_datasets if 'state_1km' in x[1]][0][0]
             self.qc_bands['sf'] = ModisQC(self.shortname, 'sf', qc_name, num_bits=16, scale_resolution=0.5)
-            # Solar Zenith Angle
+            # Solar Zenith Angle at 1km
             qc_name = [x for x in self.sub_datasets if 'SolarZenith' in x[1]][0][0]
             self.qc_bands['sza'] = ModisQC(self.shortname, 'sza', qc_name, scale_resolution=0.5)
-            # View/Sensor Zenith Angle
+            # View/Sensor Zenith Angle at 1km
             qc_name = [x for x in self.sub_datasets if 'SensorZenith' in x[1]][0][0]
             self.qc_bands['vza'] = ModisQC(self.shortname, 'vza', qc_name, scale_resolution=0.5)
 
@@ -109,6 +110,18 @@ class MODIS(SatelliteData):
             # Reflectance band quality
             qc_name = [x for x in self.sub_datasets if 'QC_250m' in x[1]][0][0]
             self.qc_bands['rbq'] = ModisQC(self.shortname, 'rbq', qc_name, num_bits=16)
+            # Reflectance State QA flags from MXD09GA at 1km
+            # open datasets from MXD09GA
+            mxd09ga_file = os.path.abspath(self.file).replace('D09GQ', 'D09GA1')
+            if not os.path.isfile(mxd09ga_file):
+                raise OSError("File not found {0}. For make the quality control of MXD09GQ "
+                              "you need have MXD09GA files".format(mxd09ga_file))
+            gdal_dataset = gdal.Open(mxd09ga_file, gdal.GA_ReadOnly)
+            mxd09ga_sub_datasets = gdal_dataset.GetSubDatasets()
+            del gdal_dataset
+
+            qc_name = [x for x in mxd09ga_sub_datasets if 'state_1km' in x[1]][0][0]
+            self.qc_bands['sf'] = ModisQC(self.shortname, 'sf', qc_name, num_bits=16, scale_resolution=0.25)
 
     def get_data_band(self, band):
         """Return the raster of the data band for respective band

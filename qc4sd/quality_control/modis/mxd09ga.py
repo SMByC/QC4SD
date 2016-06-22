@@ -46,7 +46,7 @@ def rbq(modis_qc, qcf, band, qc_pixel_value):
     return pixel_pass_quality_control
 
 
-#### Reflectance State QA Flags Band (sf) ####
+#### Reflectance State QA Flags Band (sf) at 1km ####
 def sf(modis_qc, qcf, band, qc_pixel_value):
     pixel_pass_quality_control = True
     # prepare data
