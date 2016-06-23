@@ -224,6 +224,6 @@ class ModisQC:
             # switch case for quality control band
             quality_control_band = {
                 'rbq': mxd09gq.rbq,
-                'sf': mxd09ga.sf,
+                'sf': mxd09gq.sf,
             }
             return quality_control_band[self.id_name](self, qcf, band, qc_pixel_value)
