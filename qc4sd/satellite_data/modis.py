@@ -112,7 +112,7 @@ class MODIS(SatelliteData):
             self.qc_bands['rbq'] = ModisQC(self.shortname, 'rbq', qc_name, num_bits=16)
             # Reflectance State QA flags from MXD09GA at 1km
             # open datasets from MXD09GA
-            mxd09ga_file = os.path.abspath(self.file).replace('D09GQ', 'D09GA1')
+            mxd09ga_file = os.path.abspath(self.file).replace('D09GQ', 'D09GA')
             if not os.path.isfile(mxd09ga_file):
                 raise OSError("File not found {0}. For make the quality control of MXD09GQ "
                               "you need have MXD09GA files".format(mxd09ga_file))
