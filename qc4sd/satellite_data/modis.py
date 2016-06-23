@@ -107,11 +107,7 @@ class MODIS(SatelliteData):
 
         # for MOD09/MYD09 GQ (Collection 6)
         if self.shortname in ['MOD09GQ', 'MYD09GQ']:
-            # Reflectance band quality
-            qc_name = [x for x in self.sub_datasets if 'QC_250m' in x[1]][0][0]
-            self.qc_bands['rbq'] = ModisQC(self.shortname, 'rbq', qc_name, num_bits=16)
-            # Reflectance State QA flags from MXD09GA at 1km
-            # open datasets from MXD09GA
+            # open datasets from MXD09GA for get some QC in this file
             mxd09ga_file = os.path.abspath(self.file).replace('D09GQ', 'D09GA')
             if not os.path.isfile(mxd09ga_file):
                 raise OSError("File not found {0}. For make the quality control of MXD09GQ "
@@ -119,9 +115,18 @@ class MODIS(SatelliteData):
             gdal_dataset = gdal.Open(mxd09ga_file, gdal.GA_ReadOnly)
             mxd09ga_sub_datasets = gdal_dataset.GetSubDatasets()
             del gdal_dataset
-
+            # Reflectance band quality
+            qc_name = [x for x in self.sub_datasets if 'QC_250m' in x[1]][0][0]
+            self.qc_bands['rbq'] = ModisQC(self.shortname, 'rbq', qc_name, num_bits=16)
+            # Reflectance State QA flags from MXD09GA at 1km
             qc_name = [x for x in mxd09ga_sub_datasets if 'state_1km' in x[1]][0][0]
             self.qc_bands['sf'] = ModisQC(self.shortname, 'sf', qc_name, num_bits=16, scale_resolution=0.25)
+            # Solar Zenith Angle at 1km
+            qc_name = [x for x in mxd09ga_sub_datasets if 'SolarZenith' in x[1]][0][0]
+            self.qc_bands['sza'] = ModisQC(self.shortname, 'sza', qc_name, scale_resolution=0.25)
+            # View/Sensor Zenith Angle at 1km
+            qc_name = [x for x in mxd09ga_sub_datasets if 'SensorZenith' in x[1]][0][0]
+            self.qc_bands['vza'] = ModisQC(self.shortname, 'vza', qc_name, scale_resolution=0.25)
 
     def get_data_band(self, band):
         """Return the raster of the data band for respective band

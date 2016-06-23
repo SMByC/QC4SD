@@ -129,3 +129,37 @@ def sf(modis_qc, qcf, band, qc_pixel_value):
         pixel_pass_quality_control = False
 
     return pixel_pass_quality_control
+
+
+#### Solar Zenith Angle Band ####
+def sza(modis_qc, qcf, band, qc_pixel_value):
+    pixel_pass_quality_control = True
+    # prepare data
+    qc_scale_factor = 0.01
+    qc_pixel_value = float(qc_pixel_value) * qc_scale_factor
+    ### Check
+    if (qc_pixel_value >= qcf.getfloat('MXD09GQ', 'sza_min')) is False:
+        modis_qc.invalid_pixels['sza_min'] += 1
+        pixel_pass_quality_control = False
+    if (qc_pixel_value <= qcf.getfloat('MXD09GQ', 'sza_max')) is False:
+        modis_qc.invalid_pixels['sza_max'] += 1
+        pixel_pass_quality_control = False
+
+    return pixel_pass_quality_control
+
+
+#### View/Sensor Zenith Angle Band ####
+def vza(modis_qc, qcf, band, qc_pixel_value):
+    pixel_pass_quality_control = True
+    # prepare data
+    qc_scale_factor = 0.01
+    qc_pixel_value = float(qc_pixel_value) * qc_scale_factor
+    ### Check
+    if (qc_pixel_value >= qcf.getfloat('MXD09GQ', 'vza_min')) is False:
+        modis_qc.invalid_pixels['vza_min'] += 1
+        pixel_pass_quality_control = False
+    if (qc_pixel_value <= qcf.getfloat('MXD09GQ', 'vza_max')) is False:
+        modis_qc.invalid_pixels['vza_max'] += 1
+        pixel_pass_quality_control = False
+
+    return pixel_pass_quality_control

@@ -73,6 +73,8 @@ class ModisQC:
             # set the full name for this quality control band
             if self.id_name == 'rbq': self.full_name = 'Reflectance Band Quality'
             if self.id_name == 'sf':  self.full_name = 'Reflectance State QA flags'
+            if self.id_name == 'sza': self.full_name = 'Solar Zenith Angle'
+            if self.id_name == 'vza': self.full_name = 'View/Sensor Zenith Angle'
 
     def init_statistics(self, qcf):
         """Configure and initialize statistics values. This need to be
@@ -225,5 +227,7 @@ class ModisQC:
             quality_control_band = {
                 'rbq': mxd09gq.rbq,
                 'sf': mxd09gq.sf,
+                'sza': mxd09gq.sza,
+                'vza': mxd09gq.vza,
             }
             return quality_control_band[self.id_name](self, qcf, band, qc_pixel_value)
