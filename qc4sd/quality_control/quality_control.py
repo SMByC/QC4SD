@@ -264,8 +264,7 @@ class QualityControl:
         ################################
         # plot
 
-        width = 10+len(sd_names_sorted)*0.5
-        if width > 24: width = 24
+        width = 10+len(sd_names_sorted)*0.4
         if len(sd_names_sorted) == 1: width = 7
         fig, ax = plt.subplots(1, 1, figsize=(width, 8), facecolor='white')
         ax.spines['top'].set_visible(False)
