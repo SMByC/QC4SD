@@ -342,6 +342,7 @@ class QualityControl:
             plt.ylabel("Number of invalid pixels", fontsize=14, weight='bold', color="#3A3A3A")
             plt.tick_params(axis='both', which='major', labelsize=14, color="#3A3A3A")
             ax.grid(True, color='gray')
+            ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
             fig.tight_layout()
             fig.subplots_adjust(right=0.6, left=0.4)
         else:
@@ -367,10 +368,10 @@ class QualityControl:
             plt.ylabel("Number of invalid pixels", fontsize=14, weight='bold', color="#3A3A3A")
             plt.tick_params(axis='both', which='major', labelsize=14, color="#3A3A3A")
             ax.grid(True, color='gray')
+            ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
             fig.tight_layout()
             fig.subplots_adjust(right=1.02-3.6/width)
 
-        ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
         plt.savefig(img_filename, dpi=86)
         plt.close('all')
 
