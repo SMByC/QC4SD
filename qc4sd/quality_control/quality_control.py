@@ -280,7 +280,8 @@ class QualityControl:
 
         # delete all group of list that have only zeros, this is delete types of
         # invalid pixels that not filter any pixel in all image across the time
-        delete_zeros_lists = [idx for idx, values in enumerate(all_invalid_pixels_T) if set(values) == {0}]
+        delete_zeros_lists = [idx for idx, values in enumerate(all_invalid_pixels_T)
+                              if [x for x in set(values) if not isnan(x)] == [0]]
         delete_zeros_lists.reverse()
         for del_idx in delete_zeros_lists:
                 del all_invalid_pixels_T[del_idx]
