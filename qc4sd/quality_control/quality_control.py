@@ -89,6 +89,13 @@ class QualityControl:
                 #if not (1492 < y < 2604 and 456 < x < 1788):
                 #    continue
 
+                # GA 1000-1500  1800-2600
+                #if not (1000 < y < 1700 and 600 < x < 1600):
+                #   continue
+                # GQ 1000-1500  1800-2600
+                #if not (500 < y < 2800 and 2000 < x < 3000):
+                #   continue
+
                 # if pixel is not valid then don't check it and save statistic
                 if data_band_pixel == int(self.nodata_value):
                     statistics['nodata_pixels'] += 1
@@ -199,6 +206,7 @@ class QualityControl:
         import matplotlib
         matplotlib.use('Agg')
 
+        import matplotlib.ticker as mtick
         import matplotlib.pyplot as plt
 
         # path to save statistics
@@ -362,6 +370,7 @@ class QualityControl:
             fig.tight_layout()
             fig.subplots_adjust(right=1.02-3.6/width)
 
+        ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
         plt.savefig(img_filename, dpi=86)
         plt.close('all')
 
