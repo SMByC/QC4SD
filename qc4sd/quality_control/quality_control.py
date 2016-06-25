@@ -417,11 +417,6 @@ class QualityControl:
         outRaster = driver.Create(os.path.join(output_dir, self.output_filename),
                                   sd.get_cols(self.band), sd.get_rows(self.band),
                                   nbands, gdal.GDT_Int16, ["COMPRESS=LZW", "PREDICTOR=2", "TILED=YES"])
-        # set projection
-        outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
-        outRasterSRS = osr.SpatialReference()
-        outRasterSRS.ImportFromWkt(gdal_data_band.GetProjectionRef())
-        outRaster.SetProjection(outRasterSRS.ExportToWkt())
 
         # write bands
         for nband, data_band_raster in enumerate(self.output_bands):
@@ -429,6 +424,12 @@ class QualityControl:
             outband.WriteArray(data_band_raster)
             #outband.WriteArray(sd.get_data_band(self.band))
             outband.SetNoDataValue(self.nodata_value)
-            outband.FlushCache()
+            #outband.FlushCache()  # FlushCache cause WriteEncodedTile/Strip() failed
+
+        # set projection
+        outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
+        outRasterSRS = osr.SpatialReference()
+        outRasterSRS.ImportFromWkt(gdal_data_band.GetProjectionRef())
+        outRaster.SetProjection(outRasterSRS.ExportToWkt())
 
 
