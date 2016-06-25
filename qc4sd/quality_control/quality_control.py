@@ -425,11 +425,17 @@ class QualityControl:
             #outband.WriteArray(sd.get_data_band(self.band))
             outband.SetNoDataValue(self.nodata_value)
             #outband.FlushCache()  # FlushCache cause WriteEncodedTile/Strip() failed
+            outband = None
 
         # set projection
         outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
         outRasterSRS = osr.SpatialReference()
         outRasterSRS.ImportFromWkt(gdal_data_band.GetProjectionRef())
         outRaster.SetProjection(outRasterSRS.ExportToWkt())
+
+        gdal_data_band = None
+        geotransform = None
+        outRaster = None
+
 
 
