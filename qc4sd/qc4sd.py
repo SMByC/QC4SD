@@ -25,7 +25,7 @@ DEFAULT_QCF = os.path.join(BASE_DIR, 'quality_control', 'qc_default_modis_settin
 #DEFAULT_QCF = os.path.join(BASE_DIR, 'quality_control', 'qc_default_landsat_settings.ini')
 
 
-def run(qcf, bands, files, output):
+def run(qcf, bands, files, output, not_overwrite=False):
     """Main process, execute directly if imported as module.
 
         >>> from qc4sd import qc4sd
@@ -98,10 +98,15 @@ def run(qcf, bands, files, output):
     # process the quality control per band and save result
     for band in bands:
         qc = QualityControl(config_run['quality_control_file'], band)
+        # check if the file exist and continue if not_overwrite was set (-c argument)
+        if not_overwrite and os.path.isfile(os.path.join(config_run['output'], qc.output_filename)):
+            print("\nThe file {} already exist, continue.".format(qc.output_filename))
+            continue
         qc.process()
         qc.save_results(config_run['output'])
         qc.save_statistics(config_run['output'])
 
+    print("\nProcess completed!\n")
     # Cleanup
     del config_run, files, qc
     SatelliteData.list = []
