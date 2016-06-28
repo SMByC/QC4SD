@@ -157,7 +157,7 @@ class ModisQC:
             if len(single_qcf_values) == 1 and single_qcf_values.pop() == 'true':
                 self.need_check = False
 
-    def quality_control_check(self, x, y, band, qcf):
+    def quality_control_check(self, x, y, band, qcf, with_stats):
         """Check if the specific pixel in x and y position pass or not
         pass all quality controls, this is evaluate with the quality
         control value for the respective pixel position. The quality
@@ -173,6 +173,8 @@ class ModisQC:
         :type qcf:
         :return: check list
         :rtype: dict
+        :param with_stats: make graphic stats of invalid pixels
+        :type with_stats: bool
         """
         # pass the qc if this quality band don't need to be check
         if self.need_check is False:
@@ -196,7 +198,7 @@ class ModisQC:
                 'rza': mxd09a1.rza,
                 'sf': mxd09a1.sf,
             }
-            return quality_control_band[self.id_name](self, qcf, band, qc_pixel_value)
+            return quality_control_band[self.id_name](self, qcf, band, qc_pixel_value, with_stats)
 
         # [MXD09Q1] ########################################################
         # for MOD09Q1 and MYD09Q1 (Collection 6)
@@ -206,7 +208,7 @@ class ModisQC:
                 'sf': mxd09q1.sf,
                 'rbq': mxd09q1.rbq,
             }
-            return quality_control_band[self.id_name](self, qcf, band, qc_pixel_value)
+            return quality_control_band[self.id_name](self, qcf, band, qc_pixel_value, with_stats)
 
         # [MXD09GA] ########################################################
         # for MOD09GA and MYD09GA (Collection 6)
@@ -218,7 +220,7 @@ class ModisQC:
                 'sza': mxd09ga.sza,
                 'vza': mxd09ga.vza,
             }
-            return quality_control_band[self.id_name](self, qcf, band, qc_pixel_value)
+            return quality_control_band[self.id_name](self, qcf, band, qc_pixel_value, with_stats)
 
         # [MXD09GQ] ########################################################
         # for MOD09GQ and MYD09GQ (Collection 6)
@@ -230,4 +232,4 @@ class ModisQC:
                 'sza': mxd09gq.sza,
                 'vza': mxd09gq.vza,
             }
-            return quality_control_band[self.id_name](self, qcf, band, qc_pixel_value)
+            return quality_control_band[self.id_name](self, qcf, band, qc_pixel_value, with_stats)

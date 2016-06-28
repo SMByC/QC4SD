@@ -33,6 +33,7 @@ def script():
     parser.add_argument('-bands', type=str, help='band or bands to process', required=True)
     parser.add_argument('-output', type=str, help='output directory for save results', default=os.getcwd())
     parser.add_argument('-c', dest='not_overwrite', action='store_true', help='continue/not overwrite', required=False)
+    parser.add_argument('-s', dest='with_stats', action='store_true', help='make graphic with stats of invalid pixels', required=False)
     parser.add_argument('files', type=str, help='files to process', nargs='*')
 
     args = parser.parse_args()
@@ -44,7 +45,7 @@ def script():
         raise ValueError("Incorrect format or error value for 'bands', this should be"
                          " band (int) or bands comma separated without space.")
 
-    qc4sd.run(args.qcf, args.bands, args.files, args.output, args.not_overwrite)
+    qc4sd.run(args.qcf, args.bands, args.files, args.output, args.not_overwrite, args.with_stats)
 
 
 if __name__ == '__main__':

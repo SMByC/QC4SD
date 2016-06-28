@@ -30,12 +30,13 @@ class QualityControl:
     # save all instances
     list = []
 
-    def __init__(self, quality_control_file, band):
+    def __init__(self, quality_control_file, band, with_stats):
         QualityControl.list.append(self)
         self.band = band
         self.band_name = 'band'+fix_zeros(band, 2)
 
         self.qcf = quality_control_file
+        self.with_stats = with_stats
 
         self.qc_check_lists = {}
 
@@ -43,13 +44,14 @@ class QualityControl:
         self.output_bands = []
         self.output_filename = "{0}_{1}_band{2}.tif".format(SatelliteData.tile, SatelliteData.shortname, fix_zeros(band, 2))
 
-        # for save some statistics fields after check the quality control
-        self.quality_control_statistics = {}
+        if self.with_stats:
+            # for save some statistics fields after check the quality control
+            self.quality_control_statistics = {}
 
-        # initialize quality control bands class
-        for sd in SatelliteData.list:
-            for qc_id_name, qc_checker in sd.qc_bands.items():
-                qc_checker.init_statistics(quality_control_file)
+            # initialize quality control bands class
+            for sd in SatelliteData.list:
+                for qc_id_name, qc_checker in sd.qc_bands.items():
+                    qc_checker.init_statistics(quality_control_file)
 
     def __str__(self):
         return self.band_name
@@ -98,14 +100,20 @@ class QualityControl:
 
                 # if pixel is not valid then don't check it and save statistic
                 if data_band_pixel == int(self.nodata_value):
-                    statistics['nodata_pixels'] += 1
-                    statistics['total_invalid_pixels'] += 1
+                    if self.with_stats:
+                        statistics['nodata_pixels'] += 1
+                        statistics['total_invalid_pixels'] += 1
                     continue
+
                 # check pixel with all items of all quality control bands configured
                 pixel_check_list = []
                 for qc_id_name, qc_checker in sd.qc_bands.items():
-                    pixel_check_list.append(qc_checker.quality_control_check(x, y, self.band, self.qcf))
-                    statistics['invalid_pixels'][qc_checker.full_name] = qc_checker.invalid_pixels
+                    qcc = qc_checker.quality_control_check(x, y, self.band, self.qcf, self.with_stats)
+                    pixel_check_list.append(qcc)
+                    if self.with_stats:
+                        statistics['invalid_pixels'][qc_checker.full_name] = qc_checker.invalid_pixels
+                    elif qcc is False:
+                        break
 
                 # the pixel pass or not pass the quality control:
                 # check if all validate quality control for this pixel are True
@@ -115,7 +123,8 @@ class QualityControl:
                 if not pixel_pass_quality_control:
                     #pixels_no_pass_qc = np.append(pixels_no_pass_qc, [[x, y]], axis=0)
                     pixels_no_pass_qc.append([x, y])
-                    statistics['total_invalid_pixels'] += 1
+                    if self.with_stats:
+                        statistics['total_invalid_pixels'] += 1
 
         return int(round((x_chunk[-1]*100)/sd.get_rows(self.band), 0)), statistics, pixels_no_pass_qc
 
@@ -181,7 +190,8 @@ class QualityControl:
                 pool.terminate()
 
             # save statistics
-            self.quality_control_statistics[sd.start_year_and_jday] = sd_statistics
+            if self.with_stats:
+                self.quality_control_statistics[sd.start_year_and_jday] = sd_statistics
 
             # mask all pixels that no pass the quality control
             data_band_raster = sd.get_data_band(self.band)
