@@ -110,8 +110,14 @@ class MODIS(SatelliteData):
             # open datasets from MXD09GA for get some QC in this file
             mxd09ga_file = os.path.abspath(self.file).replace('D09GQ', 'D09GA')
             if not os.path.isfile(mxd09ga_file):
-                raise OSError("File not found {0}. For make the quality control of MXD09GQ "
-                              "you need have MXD09GA files".format(mxd09ga_file))
+                for file in os.listdir(os.path.dirname(mxd09ga_file)):
+                    # check is the file exists but ending with different number
+                    # i.e. MOD09GQ.A2016065.h10v08.006.2016103070427.hdf -> MOD09GA.A2016065.h10v08.006.2016103070428.hdf
+                    if file.endswith(".hdf") and file.startswith('.'.join(os.path.basename(mxd09ga_file).split('.')[0:-2])):
+                        mxd09ga_file = os.path.join(os.path.dirname(mxd09ga_file), file)
+                if not os.path.isfile(mxd09ga_file):
+                    raise OSError("File not found {0}. For make the quality control of MXD09GQ "
+                                  "you need have MXD09GA files".format(mxd09ga_file))
             gdal_dataset = gdal.Open(mxd09ga_file, gdal.GA_ReadOnly)
             mxd09ga_sub_datasets = gdal_dataset.GetSubDatasets()
             del gdal_dataset
