@@ -177,8 +177,9 @@ class QualityControl:
                 try:
                     tasks = [(self.do_check_qc_by_chunk, (x_chunk, sd)) for x_chunk in x_chunks]
                     results = pool.map(self.meta_calculate, tasks)
+                    pool.close()
                 except:
-                    print('\nProblems with the multiprocess for this image, process without multiprocess ... ')
+                    print('\nProblems with the multiprocess for this image, process without multiprocess ... ', end="", flush=True)
                     results = [self.do_check_qc_by_chunk(range(0, sd.get_rows(self.band)), sd)]
 
                 all_pixels_no_pass_qc = []
@@ -199,7 +200,7 @@ class QualityControl:
             self.output_bands.append(data_band_raster)
 
             # clean
-            del self.data_band_raster_to_process, sd_statistics, data_band_raster, pool, n_chunks, x_chunks
+            del self.data_band_raster_to_process, sd_statistics, data_band_raster, pool, n_chunks, x_chunks, tasks, results
             # force run garbage collector memory
             gc.collect()
 
