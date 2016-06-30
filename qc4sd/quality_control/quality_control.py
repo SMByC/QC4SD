@@ -179,7 +179,7 @@ class QualityControl:
                     results = pool.map(self.meta_calculate, tasks)
                 except:
                     print('\nProblems with the multiprocess for this image, process without multiprocess ... ')
-                    results = self.do_check_qc_by_chunk(range(0, sd.get_rows(self.band)), sd)
+                    results = [self.do_check_qc_by_chunk(range(0, sd.get_rows(self.band)), sd)]
 
                 all_pixels_no_pass_qc = []
                 for statistics, pixels_no_pass_qc in results:
@@ -203,7 +203,7 @@ class QualityControl:
             # force run garbage collector memory
             gc.collect()
 
-            print(' done')
+            print('done')
 
     def save_statistics(self, output_dir):
         """Save statistics of invalid pixels in a image that show the time series of
