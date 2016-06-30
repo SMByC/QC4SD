@@ -168,26 +168,20 @@ class QualityControl:
             # calculate the number of chunks
             n_chunks = ceil(sd.get_rows(self.band)/(number_of_processes*floor(sd.get_rows(self.band)/1000)))
 
-            #n_chunks = 2
             # divide the rows in n_chunks to process matrix in multiprocess (multi-rows)
             x_chunks = chunks(range(sd.get_rows(self.band)), n_chunks)
 
             with multiprocessing.Pool(processes=number_of_processes) as pool:
-                tasks = [(self.do_check_qc_by_chunk, (x_chunk, sd))
-                         for x_chunk in x_chunks]
-
-                imap_tasks = pool.imap(self.meta_calculate, tasks)
                 print('Processing the image {0} in the band {1}:\n\t0%..'.format(sd.file_name, self.band), end="", flush=True)
 
-                #all_pixels_no_pass_qc = np.empty((0, 2), dtype=int)
+                tasks = [(self.do_check_qc_by_chunk, (x_chunk, sd)) for x_chunk in x_chunks]
+                imap_tasks = pool.map(self.meta_calculate, tasks)
+
                 all_pixels_no_pass_qc = []
                 for progress, statistics, pixels_no_pass_qc in imap_tasks:
                     print(progress, end="", flush=True)
                     sd_statistics = merge_dicts(sd_statistics, statistics)
-                    #all_pixels_no_pass_qc = np.append(all_pixels_no_pass_qc, pixels_no_pass_qc, axis=0)
                     all_pixels_no_pass_qc += pixels_no_pass_qc
-
-                pool.terminate()
 
             # save statistics
             if self.with_stats:
