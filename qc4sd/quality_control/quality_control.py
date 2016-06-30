@@ -126,12 +126,12 @@ class QualityControl:
                     if self.with_stats:
                         statistics['total_invalid_pixels'] += 1
 
-        return int(round((x_chunk[-1]*100)/sd.get_rows(self.band), 0)), statistics, pixels_no_pass_qc
+        return statistics, pixels_no_pass_qc
 
     @staticmethod
     def calculate(func, args):
-        progress, statistics, pixels_no_pass_qc = func(*args)
-        return "{0}%..".format(progress), statistics, pixels_no_pass_qc
+        statistics, pixels_no_pass_qc = func(*args)
+        return statistics, pixels_no_pass_qc
 
     def meta_calculate(self, args):
         return self.calculate(*args)
@@ -172,14 +172,17 @@ class QualityControl:
             x_chunks = chunks(range(sd.get_rows(self.band)), n_chunks)
 
             with multiprocessing.Pool(processes=number_of_processes) as pool:
-                print('Processing the image {0} in the band {1}:\n\t0%..'.format(sd.file_name, self.band), end="", flush=True)
+                print('Processing the image {0} in the band {1} ... '.format(sd.file_name, self.band), end="", flush=True)
 
-                tasks = [(self.do_check_qc_by_chunk, (x_chunk, sd)) for x_chunk in x_chunks]
-                imap_tasks = pool.map(self.meta_calculate, tasks)
+                try:
+                    tasks = [(self.do_check_qc_by_chunk, (x_chunk, sd)) for x_chunk in x_chunks]
+                    results = pool.map(self.meta_calculate, tasks)
+                except:
+                    print('\nProblems with the multiprocess for this image, process without multiprocess ... ')
+                    results = self.do_check_qc_by_chunk(range(0, sd.get_rows(self.band)), sd)
 
                 all_pixels_no_pass_qc = []
-                for progress, statistics, pixels_no_pass_qc in imap_tasks:
-                    print(progress, end="", flush=True)
+                for statistics, pixels_no_pass_qc in results:
                     sd_statistics = merge_dicts(sd_statistics, statistics)
                     all_pixels_no_pass_qc += pixels_no_pass_qc
 
