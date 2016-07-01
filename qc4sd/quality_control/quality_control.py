@@ -179,7 +179,7 @@ class QualityControl:
                     results = pool.map(self.meta_calculate, tasks)
                     pool.close()
                 except:
-                    print('\nProblems with the multiprocess for this image, process without multiprocess ... ', end="", flush=True)
+                    print('\n   Problems processing this image in parallel, continue without multiprocess ... ', end="", flush=True)
                     results = [self.do_check_qc_by_chunk(range(0, sd.get_rows(self.band)), sd)]
 
                 all_pixels_no_pass_qc = []
