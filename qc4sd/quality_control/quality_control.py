@@ -200,6 +200,7 @@ class QualityControl:
             self.output_bands.append(data_band_raster)
 
             # clean
+            pool.terminate()
             del self.data_band_raster_to_process, sd_statistics, data_band_raster, pool, n_chunks, x_chunks, tasks, results
             # force run garbage collector memory
             gc.collect()
