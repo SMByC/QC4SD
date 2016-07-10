@@ -15,6 +15,7 @@
 
 import os
 import gc
+from multiprocessing import cpu_count
 
 from qc4sd.quality_control.quality_control import QualityControl
 from qc4sd.quality_control.quality_control_file import setup_quality_control_file
@@ -25,7 +26,7 @@ DEFAULT_QCF = os.path.join(BASE_DIR, 'quality_control', 'qc_default_modis_settin
 #DEFAULT_QCF = os.path.join(BASE_DIR, 'quality_control', 'qc_default_landsat_settings.ini')
 
 
-def run(qcf, bands, files, output, not_overwrite=False, with_stats=False):
+def run(qcf, bands, files, output, not_overwrite=False, with_stats=False, number_of_processes=None):
     """Main process, execute directly if imported as module.
 
         >>> from qc4sd import qc4sd
@@ -75,6 +76,10 @@ def run(qcf, bands, files, output, not_overwrite=False, with_stats=False):
     if not os.path.isdir(output):
         raise NotADirectoryError("The output directory {0} not exist.".format(output))
 
+    # set number_of_processes
+    if number_of_processes is None:
+        number_of_processes = cpu_count()
+
     config_run = {'qcf': qcf, 'bands': bands, 'files': files, 'xml_files': xml_files, 'output': output}
 
     ################################
@@ -97,7 +102,7 @@ def run(qcf, bands, files, output, not_overwrite=False, with_stats=False):
 
     # process the quality control per band and save result
     for band in bands:
-        qc = QualityControl(config_run['quality_control_file'], band, with_stats)
+        qc = QualityControl(config_run['quality_control_file'], band, with_stats, number_of_processes)
         # check if the file exist and continue if not_overwrite was set (-c argument)
         if not_overwrite and os.path.isfile(os.path.join(config_run['output'], qc.output_filename)):
             print("\nThe file {} already exist, continue.".format(qc.output_filename))

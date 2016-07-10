@@ -10,7 +10,6 @@ import gc
 import osr
 import resource
 from concurrent.futures import ProcessPoolExecutor
-from multiprocessing import cpu_count
 from subprocess import call
 from copy import deepcopy
 from math import ceil, floor, isnan
@@ -31,13 +30,14 @@ class QualityControl:
     # save all instances
     list = []
 
-    def __init__(self, quality_control_file, band, with_stats):
+    def __init__(self, quality_control_file, band, with_stats, number_of_processes):
         QualityControl.list.append(self)
         self.band = band
         self.band_name = 'band'+fix_zeros(band, 2)
 
         self.qcf = quality_control_file
         self.with_stats = with_stats
+        self.number_of_processes = number_of_processes
 
         self.qc_check_lists = {}
 
@@ -148,9 +148,8 @@ class QualityControl:
         resource.setrlimit(resource.RLIMIT_AS, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
         resource.setrlimit(resource.RLIMIT_DATA, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
 
-        number_of_processes = cpu_count() - 1
-        if number_of_processes > 1:
-            print('\n(Running with {0} local parallel processing)\n'.format(number_of_processes))
+        if self.number_of_processes > 1:
+            print('\n(Running with {0} local parallel processing)\n'.format(self.number_of_processes))
 
         # for each file
         for sd in SatelliteData.list:
@@ -163,14 +162,14 @@ class QualityControl:
             self.data_band_raster_to_process = sd.get_data_band(self.band)
 
             # calculate the number of chunks
-            n_chunks = ceil(sd.get_rows(self.band)/(number_of_processes*floor(sd.get_rows(self.band)/1000)))
+            n_chunks = ceil(sd.get_rows(self.band)/(self.number_of_processes*floor(sd.get_rows(self.band)/1000)))
 
             # divide the rows in n_chunks to process matrix in multiprocess (multi-rows)
             x_chunks = chunks(range(sd.get_rows(self.band)), n_chunks)
 
             try:
                 print('Processing the image {0} in the band {1} ... '.format(sd.file_name, self.band), end="", flush=True)
-                with ProcessPoolExecutor(max_workers=number_of_processes) as executor:
+                with ProcessPoolExecutor(max_workers=self.number_of_processes) as executor:
                     tasks = [(self.do_check_qc_by_chunk, (x_chunk, sd)) for x_chunk in x_chunks]
                     results = executor.map(self.meta_calculate, tasks)
                 executor.shutdown()
