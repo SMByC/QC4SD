@@ -173,6 +173,7 @@ class QualityControl:
                 with ProcessPoolExecutor(max_workers=number_of_processes) as executor:
                     tasks = [(self.do_check_qc_by_chunk, (x_chunk, sd)) for x_chunk in x_chunks]
                     results = executor.map(self.meta_calculate, tasks)
+                executor.shutdown()
             except Exception:
                 print('\n   Problems processing this image in parallel, continue without '
                       'multiprocess ... ', end="", flush=True)
