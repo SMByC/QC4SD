@@ -9,7 +9,7 @@ import os
 import gc
 import osr
 import resource
-from concurrent.futures import ProcessPoolExecutor
+import multiprocessing
 from subprocess import call
 from copy import deepcopy
 from math import ceil, floor, isnan
@@ -161,27 +161,32 @@ class QualityControl:
             # TODO: optimize/performance the table open/access in memory (pytables?)
             self.data_band_raster_to_process = sd.get_data_band(self.band)
 
+            ################################
+            # start multiprocess
+            multiprocessing.freeze_support()
+
             # calculate the number of chunks
             n_chunks = ceil(sd.get_rows(self.band)/(self.number_of_processes*floor(sd.get_rows(self.band)/1000)))
 
             # divide the rows in n_chunks to process matrix in multiprocess (multi-rows)
             x_chunks = chunks(range(sd.get_rows(self.band)), n_chunks)
 
-            try:
-                print('Processing the image {0} in the band {1} ... '.format(sd.file_name, self.band), end="", flush=True)
-                with ProcessPoolExecutor(max_workers=self.number_of_processes) as executor:
+            with multiprocessing.Pool(processes=self.number_of_processes) as pool:
+                print('Processing the image {0} in the band {1} ... '.format(sd.file_name, self.band),
+                      end="", flush=True)
+                try:
                     tasks = [(self.do_check_qc_by_chunk, (x_chunk, sd)) for x_chunk in x_chunks]
-                    results = executor.map(self.meta_calculate, tasks)
-                executor.shutdown()
-            except Exception:
-                print('\n   Problems processing this image in parallel, continue without '
-                      'multiprocess ... ', end="", flush=True)
-                results = [self.do_check_qc_by_chunk(range(0, sd.get_rows(self.band)), sd)]
+                    results = pool.map(self.meta_calculate, tasks)
+                    pool.close()
+                except:
+                    print('\n   Problems processing this image in parallel, continue without multiprocess ... ',
+                          end="", flush=True)
+                    results = [self.do_check_qc_by_chunk(range(0, sd.get_rows(self.band)), sd)]
 
-            all_pixels_no_pass_qc = []
-            for statistics, pixels_no_pass_qc in results:
-                sd_statistics = merge_dicts(sd_statistics, statistics)
-                all_pixels_no_pass_qc += pixels_no_pass_qc
+                all_pixels_no_pass_qc = []
+                for statistics, pixels_no_pass_qc in results:
+                    sd_statistics = merge_dicts(sd_statistics, statistics)
+                    all_pixels_no_pass_qc += pixels_no_pass_qc
 
             # save statistics
             if self.with_stats:
@@ -196,7 +201,8 @@ class QualityControl:
             self.output_bands.append(data_band_raster)
 
             # clean
-            del self.data_band_raster_to_process, sd_statistics, data_band_raster, n_chunks, x_chunks, tasks, results
+            pool.terminate()
+            del self.data_band_raster_to_process, sd_statistics, data_band_raster, pool, n_chunks, x_chunks, tasks, results
             # force run garbage collector memory
             gc.collect()
 
