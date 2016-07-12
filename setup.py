@@ -22,7 +22,8 @@ setup(
     packages=find_packages(),
     install_requires=['gdal',
                       'numpy',
-                      'matplotlib'],
+                      'matplotlib',
+                      'joblib'],
     scripts=['bin/qc4sd'],
     platforms=['Any'],
     classifiers=[

@@ -10,7 +10,6 @@ import gc
 import tempfile
 import osr
 import resource
-import numpy as np
 import shutil
 from joblib import Parallel, delayed
 from joblib import load, dump
@@ -66,9 +65,6 @@ class QualityControl:
         processing it pixels grouped by chunks of rows in multiprocess
         """
         statistics = {'total_invalid_pixels': 0, 'nodata_pixels': 0, 'invalid_pixels': {}}
-
-        #pixels_no_pass_qc = np.empty((0, 2), dtype=int)
-        pixels_no_pass_qc = []
 
         for x in x_chunk:
             for y, data_band_pixel in enumerate(self.data_band_raster_to_process[x]):
@@ -126,19 +122,11 @@ class QualityControl:
 
                 # if the pixel not pass the quality control, replace with NoData value
                 if not pixel_pass_quality_control:
-                    #pixels_no_pass_qc = np.append(pixels_no_pass_qc, [[x, y]], axis=0)
-                    pixels_no_pass_qc.append([x, y])
+                    self.data_band_raster_to_process[x][y] = self.nodata_value
                     if self.with_stats:
                         statistics['total_invalid_pixels'] += 1
 
-        return statistics, pixels_no_pass_qc
-
-    @staticmethod
-    def calculate(func, args):
-        func(*args)
-
-    def meta_calculate(self, args):
-        self.calculate(*args)
+        return statistics
 
     def process(self):
         """Process the quality control, this is check pixel per pixel
@@ -157,7 +145,8 @@ class QualityControl:
         # for each file
         for sd in SatelliteData.list:
             # statistics for this satellite data (pixels and quality controls bands)
-            sd_statistics = {'total_pixels': sd.get_total_pixels(self.band), 'total_invalid_pixels': 0, 'nodata_pixels': 0, 'invalid_pixels': {}}
+            sd_statistics = {'total_pixels': sd.get_total_pixels(self.band),
+                             'total_invalid_pixels': 0, 'nodata_pixels': 0, 'invalid_pixels': {}}
             # get NoData value specific for band/product
             self.nodata_value = sd.get_nodata_value(self.band)
 
@@ -170,48 +159,39 @@ class QualityControl:
             # start multiprocess parallel with joblib
             print('Processing the image {0} in the band {1} ... '.format(sd.file_name, self.band),
                   end="", flush=True)
-            # define temp dir
-            folder = tempfile.mkdtemp()
-            tmp_raster = os.path.join(folder, 'tmp_raster')
-            tmp_result = os.path.join(folder, 'tmp_result')
+            # define temp dir and memmap raster to save
+            tmp_folder = tempfile.mkdtemp()
+            mmap_raster = os.path.join(tmp_folder, 'mmap_raster')
 
             # get raster for band to process
             data_band_raster_to_process = sd.get_data_band(self.band)
 
-            # Dump the input data to disk to free the memory
-            dump(data_band_raster_to_process, tmp_raster)
+            # dump the input data raster (for band to process) to disk to free the memory
+            dump(data_band_raster_to_process, mmap_raster, compress=0)
+            del data_band_raster_to_process
 
-            # Release the reference on the original in memory array and replace it
+            # release the reference on the original in memory array and replace it
             # by a reference to the memmap array so that the garbage collector can
             # release the memory before forking. gc.collect() is internally called
-            # in Parallel just before forking.
-            self.data_band_raster_to_process = load(tmp_raster, mmap_mode='r')
+            # in Parallel just before forking. Mmap_mode "r+" means read and write.
+            self.data_band_raster_to_process = load(mmap_raster, mmap_mode='r+')
 
-            # Fork the worker processes to perform computation concurrently
-            results = Parallel(n_jobs=self.number_of_processes)(delayed(self.do_check_qc_by_chunk)(x_chunk, sd) for x_chunk in x_chunks)
+            # make the quality control in parallel processes with joblib + memmap
+            statistics = Parallel(n_jobs=self.number_of_processes)\
+                (delayed(self.do_check_qc_by_chunk)(x_chunk, sd) for x_chunk in x_chunks)
 
-            all_pixels_no_pass_qc = []
-            for statistics, pixels_no_pass_qc in results:
-                sd_statistics = merge_dicts(sd_statistics, statistics)
-                all_pixels_no_pass_qc += pixels_no_pass_qc
-
-            # save statistics
+            # merge and save statistics
             if self.with_stats:
+                for stats in statistics:
+                    sd_statistics = merge_dicts(sd_statistics, stats)
                 self.quality_control_statistics[sd.start_year_and_jday] = sd_statistics
 
-            # mask all pixels that no pass the quality control
-            data_band_raster = sd.get_data_band(self.band)
-            for x, y in all_pixels_no_pass_qc:
-                data_band_raster[x, y] = self.nodata_value
-
             # save raster band for each input file with QC in sorted list chronologically
-            self.output_bands.append(data_band_raster)
+            self.output_bands.append(mmap_raster)
 
             # clean
-            #np.allclose(expected_result, sums)
-            shutil.rmtree(folder)
-            del self.data_band_raster_to_process, sd_statistics, data_band_raster, \
-                n_chunks, x_chunks, results, data_band_raster_to_process
+            del self.data_band_raster_to_process, sd_statistics, \
+                n_chunks, x_chunks, statistics
             # force run garbage collector memory
             gc.collect()
 
@@ -438,13 +418,19 @@ class QualityControl:
                                   nbands, gdal.GDT_Int16, ["COMPRESS=LZW", "PREDICTOR=2", "TILED=YES"])
 
         # write bands
-        for nband, data_band_raster in enumerate(self.output_bands):
+        for nband, data_band_raster_mmap_file in enumerate(self.output_bands):
+            # load result raster saved in file with memmap (joblib dump)
+            data_band_raster = load(data_band_raster_mmap_file, mmap_mode='r')
             outband = outRaster.GetRasterBand(nband + 1)
             outband.WriteArray(data_band_raster)
             #outband.WriteArray(sd.get_data_band(self.band))
             outband.SetNoDataValue(self.nodata_value)
             #outband.FlushCache()  # FlushCache cause WriteEncodedTile/Strip() failed
+
+            # clean
             outband = None
+            del data_band_raster
+            shutil.rmtree(os.path.dirname(data_band_raster_mmap_file))
 
         # set projection
         outRaster.SetGeoTransform((originX, pixelWidth, 0, originY, 0, pixelHeight))
@@ -452,6 +438,7 @@ class QualityControl:
         outRasterSRS.ImportFromWkt(gdal_data_band.GetProjectionRef())
         outRaster.SetProjection(outRasterSRS.ExportToWkt())
 
+        # clean
         gdal_data_band = None
         geotransform = None
         outRaster = None
