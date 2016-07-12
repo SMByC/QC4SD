@@ -7,9 +7,13 @@
 
 import os
 import gc
+import tempfile
 import osr
 import resource
-import multiprocessing
+import numpy as np
+import shutil
+from joblib import Parallel, delayed
+from joblib import load, dump
 from subprocess import call
 from copy import deepcopy
 from math import ceil, floor, isnan
@@ -131,11 +135,10 @@ class QualityControl:
 
     @staticmethod
     def calculate(func, args):
-        statistics, pixels_no_pass_qc = func(*args)
-        return statistics, pixels_no_pass_qc
+        func(*args)
 
     def meta_calculate(self, args):
-        return self.calculate(*args)
+        self.calculate(*args)
 
     def process(self):
         """Process the quality control, this is check pixel per pixel
@@ -157,36 +160,40 @@ class QualityControl:
             sd_statistics = {'total_pixels': sd.get_total_pixels(self.band), 'total_invalid_pixels': 0, 'nodata_pixels': 0, 'invalid_pixels': {}}
             # get NoData value specific for band/product
             self.nodata_value = sd.get_nodata_value(self.band)
-            # get raster for band to process
-            # TODO: optimize/performance the table open/access in memory (pytables?)
-            self.data_band_raster_to_process = sd.get_data_band(self.band)
-
-            ################################
-            # start multiprocess
-            multiprocessing.freeze_support()
 
             # calculate the number of chunks
-            n_chunks = ceil(sd.get_rows(self.band)/(self.number_of_processes*floor(sd.get_rows(self.band)/1000)))
-
+            n_chunks = ceil(sd.get_rows(self.band) / (self.number_of_processes * floor(sd.get_rows(self.band) / 1000)))
             # divide the rows in n_chunks to process matrix in multiprocess (multi-rows)
             x_chunks = chunks(range(sd.get_rows(self.band)), n_chunks)
 
-            with multiprocessing.Pool(processes=self.number_of_processes) as pool:
-                print('Processing the image {0} in the band {1} ... '.format(sd.file_name, self.band),
-                      end="", flush=True)
-                try:
-                    tasks = [(self.do_check_qc_by_chunk, (x_chunk, sd)) for x_chunk in x_chunks]
-                    results = pool.map(self.meta_calculate, tasks)
-                    pool.close()
-                except:
-                    print('\n   Problems processing this image in parallel, continue without multiprocess ... ',
-                          end="", flush=True)
-                    results = [self.do_check_qc_by_chunk(range(0, sd.get_rows(self.band)), sd)]
+            ################################
+            # start multiprocess parallel with joblib
+            print('Processing the image {0} in the band {1} ... '.format(sd.file_name, self.band),
+                  end="", flush=True)
+            # define temp dir
+            folder = tempfile.mkdtemp()
+            tmp_raster = os.path.join(folder, 'tmp_raster')
+            tmp_result = os.path.join(folder, 'tmp_result')
 
-                all_pixels_no_pass_qc = []
-                for statistics, pixels_no_pass_qc in results:
-                    sd_statistics = merge_dicts(sd_statistics, statistics)
-                    all_pixels_no_pass_qc += pixels_no_pass_qc
+            # get raster for band to process
+            data_band_raster_to_process = sd.get_data_band(self.band)
+
+            # Dump the input data to disk to free the memory
+            dump(data_band_raster_to_process, tmp_raster)
+
+            # Release the reference on the original in memory array and replace it
+            # by a reference to the memmap array so that the garbage collector can
+            # release the memory before forking. gc.collect() is internally called
+            # in Parallel just before forking.
+            self.data_band_raster_to_process = load(tmp_raster, mmap_mode='r')
+
+            # Fork the worker processes to perform computation concurrently
+            results = Parallel(n_jobs=self.number_of_processes)(delayed(self.do_check_qc_by_chunk)(x_chunk, sd) for x_chunk in x_chunks)
+
+            all_pixels_no_pass_qc = []
+            for statistics, pixels_no_pass_qc in results:
+                sd_statistics = merge_dicts(sd_statistics, statistics)
+                all_pixels_no_pass_qc += pixels_no_pass_qc
 
             # save statistics
             if self.with_stats:
@@ -201,8 +208,10 @@ class QualityControl:
             self.output_bands.append(data_band_raster)
 
             # clean
-            pool.terminate()
-            del self.data_band_raster_to_process, sd_statistics, data_band_raster, pool, n_chunks, x_chunks, tasks, results
+            #np.allclose(expected_result, sums)
+            shutil.rmtree(folder)
+            del self.data_band_raster_to_process, sd_statistics, data_band_raster, \
+                n_chunks, x_chunks, results, data_band_raster_to_process
             # force run garbage collector memory
             gc.collect()
 
