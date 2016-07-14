@@ -21,6 +21,8 @@ try:
 except ImportError:
     import gdal
 
+gdal.PushErrorHandler('CPLQuietErrorHandler')  # quiet the gdal warnings/errors messages
+
 from qc4sd.lib import fix_zeros, chunks, merge_dicts, repulsive_items_list
 from qc4sd.satellite_data.satellite_data import SatelliteData
 
