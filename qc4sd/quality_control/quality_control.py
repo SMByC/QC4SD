@@ -139,8 +139,16 @@ class QualityControl:
         resource.setrlimit(resource.RLIMIT_AS, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
         resource.setrlimit(resource.RLIMIT_DATA, (resource.RLIM_INFINITY, resource.RLIM_INFINITY))
 
+        # check the files if the qc was success set
+        if False in [sd.make_qc for sd in SatelliteData.list]:
+            print("\nWARNING: Not be held the quality control for {0} file(s) of {1} in total\n"
+                  "due to problems in settings the quality control configurations (see above)".format(
+                   [sd.make_qc for sd in SatelliteData.list].count(False), len(SatelliteData.list)))
+            # clean the SD that not success the quality control
+            [SatelliteData.list.remove(sd) for sd in SatelliteData.list if not sd.make_qc]
+
         if self.number_of_processes > 1:
-            print('\n(Running with {0} local parallel processing)\n'.format(self.number_of_processes))
+            print('\n(Running with {0} local parallel processing)'.format(self.number_of_processes))
 
         # for each file
         for sd in SatelliteData.list:

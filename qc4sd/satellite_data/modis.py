@@ -49,7 +49,9 @@ class MODIS(SatelliteData):
         SatelliteData.shortname = self.shortname
         SatelliteData.tile = self.tile
 
-        self.set_quality_control_bands()
+        qc_success_set = self.set_quality_control_bands()
+        self.make_qc = qc_success_set
+
         del tree
 
     def set_quality_control_bands(self):
@@ -116,8 +118,10 @@ class MODIS(SatelliteData):
                     if file.endswith(".hdf") and file.startswith('.'.join(os.path.basename(mxd09ga_file).split('.')[0:-2])):
                         mxd09ga_file = os.path.join(os.path.dirname(mxd09ga_file), file)
                 if not os.path.isfile(mxd09ga_file):
-                    raise OSError("File not found {0}. For make the quality control of MXD09GQ "
-                                  "you need have MXD09GA files".format(mxd09ga_file))
+                    print("\nFile not found {0}. For make the quality control of MXD09GQ "\
+                          "you need have MXD09GA files. Not be held the QC4SD for the file {1}".
+                          format(mxd09ga_file, os.path.basename(self.file)))
+                    return False
             gdal_dataset = gdal.Open(mxd09ga_file, gdal.GA_ReadOnly)
             mxd09ga_sub_datasets = gdal_dataset.GetSubDatasets()
             del gdal_dataset
@@ -133,6 +137,7 @@ class MODIS(SatelliteData):
             # View/Sensor Zenith Angle at 1km
             qc_name = [x for x in mxd09ga_sub_datasets if 'SensorZenith' in x[1]][0][0]
             self.qc_bands['vza'] = ModisQC(self.shortname, 'vza', qc_name, scale_resolution=0.25)
+        return True
 
     def get_data_band(self, band):
         """Return the raster of the data band for respective band
